@@ -1,0 +1,7 @@
+# Compatibility baseline for the original mp.solutions.hands implementation.
+# Use Python 3.11 in a fresh virtual environment.
+pygame==2.6.1
+mediapipe==0.10.21
+numpy==1.26.4
+# MediaPipe depends on the contrib distribution; install only one cv2 package.
+opencv-contrib-python==4.11.0.86

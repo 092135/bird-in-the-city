@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.vscode/
+# Ignore new local score files. The original tracked score is preserved.
+highscore.txt
