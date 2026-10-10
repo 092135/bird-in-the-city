@@ -30,3 +30,10 @@ Restricted/headless execution cannot create the macOS OpenGL context required by
 6. Check actual sound output and a game-over → R restart.
 
 Use Fn with F2/F3 if the keyboard assigns those keys to system media controls. No live-camera gesture playthrough, hardware-disconnection trial, or audible-output confirmation is claimed by the automated checks.
+
+## Replay regression check — 2026-10-10
+
+- Added a game-loop regression that reaches game over through zero health, sends an R key event, checks fresh-round state, and verifies movement and shooting on the next frame.
+- Reproduced inherited spawn/combo counters before the fix. Replay now also clears those counters, transient animations, frame counters, slowdown state, and active sounds while retaining the input controller and high score.
+- All **16 tests passed** after the fix. Inspected the rendered game-over view with the explicit instruction to click the game window before pressing R.
+- These are simulated keyboard events; live-camera control remains outside this check.

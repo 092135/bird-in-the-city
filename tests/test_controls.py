@@ -143,6 +143,46 @@ class GameTests(unittest.TestCase):
         self.assertEqual(g.bird_health, 100)
         self.assertFalse(g.game_over)
 
+    def test_r_replays_through_event_loop_and_accepts_input(self):
+        g = self.game
+        g.in_menu = False
+        g.bird_health = 0
+        g.update()
+        self.assertTrue(g.game_over)
+        g.score, g.level = 500, 4
+        g.enemy_spawn_timer, g.power_up_spawn_timer = 40, 800
+        g.combo_count, g.combo_timer = 5, 120
+        g.milestone_power_up_counter = 1000
+        g.time_factor = 0.7
+        g.add_recovery_animation(g.bird_pos.copy())
+        controller = g.controls
+        best = g.highscore
+        calls = 0
+
+        def events():
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r)]
+            if calls == 2:
+                self.assertFalse(g.game_over)
+                self.assertEqual((g.bird_health, g.score, g.level), (100, 0, 1))
+                self.assertEqual((g.enemy_spawn_timer, g.power_up_spawn_timer,
+                                  g.combo_count, g.combo_timer,
+                                  g.milestone_power_up_counter), (0, 0, 0, 0, 0))
+                self.assertEqual(g.active_animations, [])
+                self.assertEqual(g.time_factor, 1.0)
+                self.assertIs(g.controls, controller)
+                self.assertEqual(g.highscore, best)
+                return []
+            self.assertGreater(g.bird_pos[0], 100)
+            self.assertEqual(len(g.bullets), 1)
+            return [pygame.event.Event(pygame.QUIT)]
+
+        with patch.object(pygame.event, 'get', side_effect=events), patch.object(g.controls, 'poll', return_value=InputState(movement=(1, 0), shoot=True)):
+            g.run()
+        self.assertEqual(calls, 3)
+
     def test_camera_target_uses_original_smoothing(self):
         g = self.game
         x, y = g.bird_pos

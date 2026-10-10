@@ -1244,7 +1244,7 @@ class Game:
             self.screen.blit(value_surface, value_rect)
         
         # 操作提示也相应下移
-        hint = "RETRY: R   QUIT: Q"
+        hint = "REPLAY: R   QUIT: Q"
         hint_surface = font.render(hint, True, text_color)
         hint_rect = hint_surface.get_rect(center=(self.width//2, self.height * 0.78))  # 从0.7改为0.75
         hint_shadow = font.render(hint, True, shadow_color)
@@ -1252,6 +1252,9 @@ class Game:
         
         self.screen.blit(hint_shadow, hint_shadow_rect)
         self.screen.blit(hint_surface, hint_rect)
+        focus_font = pygame.font.Font(None, 24)
+        focus_hint = focus_font.render("Click this game window first, then press R", True, text_color)
+        self.screen.blit(focus_hint, focus_hint.get_rect(center=(self.width // 2, self.height * 0.86)))
             
     def reset_game(self):
         overlay = pygame.Surface((self.width, self.height))
@@ -1276,6 +1279,19 @@ class Game:
         self.power_ups.clear()
         self.game_over = False
         self.flash_effect = False
+        self.enemy_spawn_timer = 0
+        self.power_up_spawn_timer = 0
+        self.combo_count = 0
+        self.combo_timer = 0
+        self.milestone_power_up_counter = 0
+        self.frame_count = 0
+        self.current_frame = 0
+        self.time_factor = 1.0
+        self.last_valid_pos = self.bird_pos.copy()
+        self.active_animations.clear()
+        pygame.time.set_timer(pygame.USEREVENT, 0)
+        for sound in self.sound_effect.values():
+            sound.stop()
         for effect in self.effects.values():
             effect['duration'] = 0
             effect['uses'] = 0
