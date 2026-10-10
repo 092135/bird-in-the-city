@@ -6,21 +6,27 @@
 
 `run.py` resolves `main/` relative to its own file, switches to that working directory, and runs `main/test.py` as `__main__`. It restores the caller's directory on exit, including exceptions. This preserves the original game and its relative font, sound, and high-score paths.
 
-`main/test.py` is the original application, despite its filename. It contains three classes:
+`main/test.py` is the game application, despite its filename. Input adapters now live in `main/controls.py`. The main responsibilities are:
 
 | Class | Responsibility |
 | :--- | :--- |
 | `GameConfig` | Window settings, damage, progression, asset paths, sounds, and power-up settings |
 | `MenuState` | Mouse-operated menu and introduction screens |
-| `Game` | Webcam input, assets, game state, collisions, scoring, rendering, audio, and cleanup |
+| `Game` | Applies input intentions; owns assets, state, collisions, scoring, rendering, audio, and cleanup |
+| `InputState` | Immutable movement / target / shooting intention |
+| `KeyboardInput` | WASD / arrows and Space; normalized diagonal movement |
+| `CameraInput` | Lazy camera dependencies, landmark interpretation, preview, resource cleanup |
+| `InputController` | Mode selection, camera-error fallback, retry, and user-facing hints |
 
 ## Input pipeline
 
-1. OpenCV captures camera `0`, mirrors the frame, resizes it to 320 × 240, and converts BGR to RGB.
+1. OpenCV captures the selected camera (default `0`), mirrors the frame, resizes it to 320 × 240, and converts BGR to RGB.
 2. MediaPipe Hands detects up to two hands and returns landmarks and handedness labels.
 3. The right index fingertip (landmark `8`) maps to the left third of the 800 × 600 game window. A smoothing factor of `0.15` reduces abrupt movement.
 4. The left thumb tip (`4`) and index tip (`8`) trigger shooting when their normalized 2D distance is below `0.05`, subject to cooldown.
 5. Pygame updates hazards, bullets, collisions, power-ups, score, and level, then renders the scene. The loop targets 60 FPS; actual performance depends on the machine and camera.
+
+Keyboard input produces a relative movement vector; camera input produces a normalized absolute target. `Game.handle_input()` applies movement, clamps position, and owns shooting cooldown and invincibility timers. A camera failure closes its resources and reads keyboard input in the same frame, so timers continue. No detected hand produces a neutral intention, without treating it as a camera failure. F2 closes the camera; F3 retries the selected camera index.
 
 ## Visual state
 
@@ -30,20 +36,19 @@ The death portrait in the README character lineup is supplied presentation artwo
 
 ## Dependencies
 
-The requirements target Python 3.11 and the original MediaPipe Solutions API. The MediaPipe [0.10.21 release](https://pypi.org/project/mediapipe/0.10.21/) provides Python 3.11 wheels. OpenCV's [contrib distribution](https://pypi.org/project/opencv-contrib-python/4.11.0.86/) supplies `cv2` and is also a MediaPipe dependency; avoid installing multiple OpenCV distributions into the same environment.
+The requirements target Python 3.11 / 3.12 and the original MediaPipe Solutions API. The MediaPipe [0.10.21 release](https://pypi.org/project/mediapipe/0.10.21/) provides Python 3.11 wheels. OpenCV's [contrib distribution](https://pypi.org/project/opencv-contrib-python/4.11.0.86/) supplies `cv2` and is also a MediaPipe dependency; avoid installing multiple OpenCV distributions into the same environment.
 
 This file pins direct dependencies, not the complete transitive dependency tree. Fresh installation and live-camera play should be verified on the target computer before treating this as a reproducible release.
 
 ## Known implementation limitations
 
-- `init_camera()` records `use_camera = False` on failure, but `handle_input()` still reads the capture directly. The printed keyboard-fallback message does not reflect an implemented control mode.
 - Font and sound paths are relative to the working directory. The root launcher supplies the expected directory; these paths have not been rewritten throughout the game.
 - `highscore.txt` is local mutable state. An original score file is already tracked in the repository; adding it to `.gitignore` does not untrack it.
 - Gameplay timers mostly count frames. The configured FPS is a target, not a measured performance result.
-- There is no automated gameplay test suite or documented player evaluation in this repository.
+- Automated input and rendering regression checks live in `tests/`. There is no documented player evaluation in this repository.
 
-## Suggested next refactor
+## Scope of this refactor
 
-Separate configuration, camera input, gameplay state, and rendering only alongside regression checks. A useful first boundary is an input adapter that returns movement and shooting intentions, allowing the same game logic to accept either camera or keyboard input. Camera-failure handling can then select a real alternative control mode.
+The input boundary is implemented. The original game rules, asset directories, camera smoothing, pinch threshold, and shooting cooldown are retained. Configuration, menus, and rendering stay together until a concrete feature calls for another separation.
 
-This documentation update adds a discoverable launcher and a dedicated documentation directory while preserving the original gameplay implementation and asset layout.
+Validation and remaining manual checks are recorded in [VALIDATION.md](VALIDATION.md).

@@ -1,10 +1,9 @@
 import pygame
-import cv2
-import mediapipe as mp
 import numpy as np
 import random
 from pygame.locals import *
 import os
+from controls import InputController
 
 class GameConfig:
     # Window settings
@@ -237,8 +236,12 @@ class MenuState:
         mouse_clicked = False
         
         for event in pygame.event.get():
-            if event.type == QUIT:
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 return 'quit'
+            elif event.type == KEYDOWN and event.key == K_F2:
+                self.game.controls.select_keyboard()
+            elif event.type == KEYDOWN and event.key == K_F3:
+                self.game.controls.select_camera()
             elif event.type == MOUSEBUTTONDOWN:
                 mouse_clicked = True
                 
@@ -288,6 +291,10 @@ class MenuState:
             color_scheme = self.button_colors['hover' if is_hovered else 'normal']
             self.draw_pixel_button(back_rect, color_scheme, 'BACK')
             
+        hint_font = pygame.font.Font(None, 20)
+        hint = hint_font.render(self.game.controls.hint, True, (255, 255, 255))
+        pygame.draw.rect(self.screen, (35, 27, 24), (0, self.game.height - 24, self.game.width, 24))
+        self.screen.blit(hint, (8, self.game.height - 20))
         pygame.display.flip()
 
     def run(self):
@@ -303,7 +310,7 @@ class MenuState:
             self.clock.tick(60)
 
 class Game:
-    def __init__(self):
+    def __init__(self, input_mode="auto", camera_index=0):
         pygame.init()
         self.width = GameConfig.WINDOW_WIDTH
         self.height = GameConfig.WINDOW_HEIGHT
@@ -323,8 +330,6 @@ class Game:
         self.combo_timer = 0
         self.milestone_power_up_counter = 0
 
-        # Initialize mediapipe
-        self.init_camera()
         
         # Bird properties
         self.bird_pos = GameConfig.BIRD_START_POS.copy()
@@ -369,28 +374,7 @@ class Game:
 
         self.menu_state = MenuState(self)
         self.in_menu = True
-
-    def init_camera(self):
-        try:
-            self.mp_hands = mp.solutions.hands
-            self.mp_draw = mp.solutions.drawing_utils
-            self.hands = self.mp_hands.Hands(
-                max_num_hands=2,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5,
-                model_complexity=0
-            )
-            self.cap = cv2.VideoCapture(0)
-            if not self.cap.isOpened():
-                print("Warning: Cannot open camera, falling back to keyboard controls")
-                self.use_camera = False
-                return False
-            self.use_camera = True
-            return True
-        except Exception as e:
-            print(f"Error initializing camera: {e}")
-            self.use_camera = False
-            return False
+        self.controls = InputController(input_mode, camera_index)
 
     def load_image(self, path, size=None):
         try:
@@ -587,75 +571,38 @@ class Game:
         
         return distance < (size2 + collision_size1)
             
-    def detect_hand_gesture(self, hand_landmarks):
-        thumb_tip = hand_landmarks.landmark[4]
-        index_tip = hand_landmarks.landmark[8]
-        distance = np.sqrt((thumb_tip.x - index_tip.x)**2 + 
-                          (thumb_tip.y - index_tip.y)**2)
-        return distance < 0.05
-
     def handle_input(self):
         for event in pygame.event.get():
-            if event.type == QUIT:
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 self.running = False
-        
-        ret, frame = self.cap.read()
-        if not ret:
+            elif event.type == KEYDOWN and event.key == K_F2:
+                self.controls.select_keyboard()
+            elif event.type == KEYDOWN and event.key == K_F3:
+                self.controls.select_camera()
+        if not self.running:
             return
-            
-        frame = cv2.flip(frame, 1)
-        frame = cv2.resize(frame, (320, 240))
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.hands.process(frame_rgb)
-        
-        shoot = False
-        
-        if results.multi_hand_landmarks:
-            for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                # 右手控制移动
-                if handedness.classification[0].label == 'Right':
-                    index_tip = hand_landmarks.landmark[8]
-                    
-                    # 限制在左侧1/3区域
-                    max_x = self.width // 3
-                    game_x = min(max(30, int(index_tip.x * max_x)), max_x - 30)
-                    game_y = min(max(30, int(index_tip.y * self.height)), self.height - 30)
-                    
-                    # 使用较小的平滑系数使移动更平滑
-                    self.bird_pos[0] += (game_x - self.bird_pos[0]) * 0.15
-                    self.bird_pos[1] += (game_y - self.bird_pos[1]) * 0.15
-                    
-                # 左手控制射击
-                elif handedness.classification[0].label == 'Left':
-                    if self.detect_hand_gesture(hand_landmarks) and self.shooting_delay <= 0:
-                        shoot = True
-            
-            if self.frame_count % 2 == 0:
-                self.draw_hand_tracking(frame, results.multi_hand_landmarks)
-        
-        # 确保边界限制
-        self.bird_pos[0] = max(30, min(self.width//3 - 30, self.bird_pos[0]))
+
+        intent = self.controls.poll()
+        if intent.target is not None:
+            max_x = self.width // 3
+            game_x = min(max(30, int(intent.target[0] * max_x)), max_x - 30)
+            game_y = min(max(30, int(intent.target[1] * self.height)), self.height - 30)
+            self.bird_pos[0] += (game_x - self.bird_pos[0]) * 0.15
+            self.bird_pos[1] += (game_y - self.bird_pos[1]) * 0.15
+        else:
+            self.bird_pos[0] += intent.movement[0] * 5
+            self.bird_pos[1] += intent.movement[1] * 5
+
+        self.bird_pos[0] = max(30, min(self.width // 3 - 30, self.bird_pos[0]))
         self.bird_pos[1] = max(30, min(self.height - 30, self.bird_pos[1]))
-        
-        if shoot:
+        if intent.shoot and self.shooting_delay <= 0:
             self.fire_bullet()
-            self.shooting_delay = 20 if not self.effects['rapid_fire']['duration'] > 0 else 10
-
+            self.shooting_delay = 10 if self.effects['rapid_fire']['duration'] > 0 else 20
             self.play_single_sound(self.bullet_sound, 0, 0.85)
-            
-            
-        if self.shooting_delay > 0:
-            self.shooting_delay -= 1
-        if self.invincible_timer > 0:
-            self.invincible_timer -= 1
-            
+        # Timers continue even when the camera fails or no hand is detected.
+        self.shooting_delay = max(0, self.shooting_delay - 1)
+        self.invincible_timer = max(0, self.invincible_timer - 1)
         self.frame_count += 1
-
-    def draw_hand_tracking(self, frame, hand_landmarks):
-        for landmarks in hand_landmarks:
-            self.mp_draw.draw_landmarks(frame, landmarks, self.mp_hands.HAND_CONNECTIONS)
-        cv2.imshow('Hand Tracking', frame)
-        cv2.waitKey(1)
 
     def fire_bullet(self):
         angles = set()  # 使用集合避免重复角度
@@ -759,24 +706,28 @@ class Game:
             while self.running:
                 if not self.game_over:
                     self.handle_input()
+                    if not self.running:
+                        break
                     self.update()
                 else:
                     for event in pygame.event.get():
                         if event.type == QUIT:
                             self.running = False
                         elif event.type == KEYDOWN:
-                            if event.key == K_r:
+                            if event.key == K_F2:
+                                self.controls.select_keyboard()
+                            elif event.key == K_F3:
+                                self.controls.select_camera()
+                            elif event.key == K_r:
                                 self.play_single_sound('button_click', 0, 1.3)
                                 self.reset_game()
-                            elif event.key == K_q:
+                            elif event.key in (K_q, K_ESCAPE):
                                 self.running = False
             
                 self.draw()
                 self.clock.tick(60)
         finally:
-            if hasattr(self, 'cap'):  # 检查cap是否存在
-                self.cap.release()
-            cv2.destroyAllWindows()
+            self.controls.close()
             pygame.quit()
 
     def spawn_power_ups(self):
@@ -1159,6 +1110,10 @@ class Game:
                 self.play_single_sound('game_over', 0, 0.4)
                 self.game_over_playing = True
         
+        hint_font = pygame.font.Font(None, 20)
+        hint = hint_font.render(self.controls.hint, True, (255, 255, 255))
+        pygame.draw.rect(self.screen, (35, 27, 24), (0, self.height - 24, self.width, 24))
+        self.screen.blit(hint, (8, self.height - 20))
         pygame.display.flip()
         
     def draw_ui(self):
@@ -1347,5 +1302,10 @@ class Game:
             print(f"Sound type '{sound_type}' not found in configuration.")
         
 if __name__ == '__main__':
-    game = Game()
+    import argparse
+    parser = argparse.ArgumentParser(description="Bird in the City")
+    parser.add_argument('--input', choices=['auto', 'camera', 'keyboard'], default='auto')
+    parser.add_argument('--camera-index', type=int, default=0)
+    args = parser.parse_args()
+    game = Game(input_mode=args.input, camera_index=args.camera_index)
     game.run()

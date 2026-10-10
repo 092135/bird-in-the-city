@@ -59,6 +59,7 @@ The background is selected by the bird's current health. Collecting a recovery i
 
 *Presentation note: gameplay images were supplied with the project's portfolio assets. They were rendered from game code with simulated gesture input and staged HUD values; they are illustrative screenshots, not live playtest captures. See [image provenance](docs/images/README.md).*
 
+- **Keyboard fallback:** WASD / arrow keys to move, Space to shoot; automatic fallback when the camera fails.
 - **Two-hand control:** right index fingertip for movement; left thumb–index pinch for shooting.
 - **Five power-ups:** health recovery, shield, rapid fire, triple shot, and spread shot.
 - **Progression:** scores, combo bonuses, rising levels, and increasingly frequent enemies.
@@ -67,7 +68,7 @@ The background is selected by the bird's current health. Collecting a recovery i
 
 ## How to play
 
-Keep both hands visible to the webcam with enough light and space around them.
+For gesture control, keep both hands visible to the webcam with enough light and space around them. Keyboard controls are available without a camera. On keyboards with media-function keys, you may need to hold Fn while pressing F2 or F3.
 
 | Action | Control |
 | :--- | :--- |
@@ -76,13 +77,16 @@ Keep both hands visible to the webcam with enough light and space around them.
 | Shoot | Pinch your **left thumb and index finger** together; holding the pinch repeats shots after a cooldown |
 | Restart after game over | Press **R** with the game window focused |
 | Quit after game over | Press **Q** with the game window focused |
-| Exit during play | Close the game window |
+| Keyboard movement / shooting | **WASD** or **arrow keys** / hold **Space** |
+| Switch to keyboard | **F2** |
+| Retry / switch to camera | **F3** |
+| Exit | **Esc** or close the game window |
 
 The game also opens a **Hand Tracking** window showing the camera feed and detected landmarks. Hand positions are processed locally by the current implementation.
 
 ## Quick start
 
-Use **Python 3.11**, a webcam, and a desktop session with working graphics and audio. The dependency versions below are a compatibility baseline for this legacy prototype, not a claim of testing on every platform.
+Use **Python 3.11 or 3.12** and a desktop session with working graphics and audio. A webcam is needed only for gesture control. Installation and automated gameplay checks were verified on macOS ARM64 with Python 3.12; other platforms still need testing.
 
 ```bash
 git clone https://github.com/092135/bird-in-the-city.git
@@ -105,6 +109,12 @@ Then install and launch:
 ```bash
 python -m pip install -r requirements.txt
 python run.py
+
+# Start without opening a camera
+python run.py --input keyboard
+
+# Select a different camera
+python run.py --input camera --camera-index 1
 ```
 
 On Windows, use `py -3.11 -m venv .venv` to create the environment. Allow camera access for the terminal or IDE you launch from when your operating system asks.
@@ -115,7 +125,7 @@ The root launcher selects the game's working directory so the existing font and 
 
 | Symptom | What to check |
 | :--- | :--- |
-| Camera does not open or the bird will not move | Close other camera apps, check OS camera permissions, and confirm the default camera (index `0`) is available. **Keyboard movement is not implemented**, despite an old fallback message in the source. |
+| Camera does not open or the bird will not move | Close other camera apps, check OS camera permissions, and confirm the default camera (index `0`) is available. The game switches to keyboard controls on camera errors. Use WASD / arrows and Space, then press F3 to retry the camera. |
 | `mediapipe` has no attribute `solutions` | Use a fresh Python 3.11 environment and the supplied requirements. The code uses the legacy `mp.solutions.hands` API. |
 | Font or audio files cannot be found | Launch with `python run.py` from the repository root, or run `test.py` from inside `main/`. |
 | Audio initialization fails | Check that the desktop session has an available audio device. The prototype expects audio to initialize. |
@@ -128,12 +138,14 @@ bird-in-the-city/
 ├── README.md                 # Project overview and setup
 ├── run.py                    # Root-level launcher
 ├── requirements.txt          # Direct dependency versions
+├── tests/                    # Input and gameplay regression checks
 ├── docs/
 │   ├── README.zh-CN.md       # Chinese overview and instructions
 │   ├── ARCHITECTURE.md       # Input pipeline and code map
 │   └── images/               # README visuals and provenance
 └── main/
-    ├── test.py               # Original game implementation (not a test suite)
+    ├── test.py               # Game implementation (not a test suite)
+    ├── controls.py           # Camera and keyboard input adapters
     ├── Animation/            # Bird sprites, backgrounds, effects and UI
     ├── font/                 # Pixel font
     ├── sfx/                  # Music and sound effects
@@ -147,6 +159,8 @@ flowchart LR
     A[Webcam / OpenCV] --> B[MediaPipe Hands]
     B --> C[Right index fingertip]
     B --> D[Left thumb-index pinch]
+    J[Keyboard / fallback] --> E
+    J --> F
     C --> E[Smoothed bird movement]
     D --> F[Shooting and cooldown]
     E --> G[Pygame game loop]
@@ -166,6 +180,14 @@ See the [code guide](docs/ARCHITECTURE.md) for implementation details and next s
 
 ## Prototype status
 
-The current implementation keeps configuration, menus, input, gameplay, and rendering in one file. It needs a working webcam; camera failure handling and a genuine keyboard mode remain development tasks. A full live-camera playthrough is not part of this documentation refresh's validation.
+Camera and keyboard input live in `main/controls.py`; configuration, menus, gameplay, and rendering remain in `main/test.py`. Camera initialization and frame-processing errors switch to keyboard controls, with an on-screen mode hint. F2 selects keyboard control; F3 retries the camera.
 
-Possible next steps are to separate input from game logic, add a keyboard mode for easier testing, and evaluate the interaction with players. These are future improvements, not current features.
+Run the automated checks from the repository root:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The checks use dummy video/audio devices, real game assets, and simulated input or camera failures. They cover movement, shooting cooldown, input switching, resource cleanup, and rendering of menus, health states, shield, and game over. They do not replace a live-camera hand-gesture playtest or confirm real audio output. See [validation details](docs/VALIDATION.md).
+
+Further work should focus on live interaction testing and camera tracking quality before a broader code refactor.
