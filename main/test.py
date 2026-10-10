@@ -4,6 +4,7 @@ import random
 from pygame.locals import *
 import os
 from controls import InputController
+from guide import ControlsGuide
 
 class GameConfig:
     # Window settings
@@ -181,6 +182,9 @@ class MenuState:
                               button_width, button_height)
         }
         
+        for name, y in [('play', 220), ('intro', 300), ('guide', 380), ('quit', 460)]:
+            self.buttons[name] = pygame.Rect(275, y, 250, 60)
+
         # 像素风格的配色方案
         self.button_colors = {
             'normal': {
@@ -236,6 +240,8 @@ class MenuState:
         mouse_clicked = False
         
         for event in pygame.event.get():
+            if self.game.guide.handle_event(event, self.game.controls):
+                continue
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 return 'quit'
             elif event.type == KEYDOWN and event.key == K_F2:
@@ -253,6 +259,8 @@ class MenuState:
                         if mouse_clicked:
                             if button_name == 'play':
                                 return 'play'
+                            elif button_name == 'guide':
+                                self.game.guide.visible = True
                             elif button_name == 'intro':
                                 self.current_state = 'intro'
                             elif button_name == 'quit':
@@ -277,7 +285,7 @@ class MenuState:
         
         # Draw buttons based on current state
         if self.current_state == 'menu':
-            button_labels = {'play': 'PLAY', 'intro': 'INTRO', 'quit': 'QUIT'}
+            button_labels = {'play': 'PLAY', 'intro': 'INTRO', 'guide': 'GUIDE', 'quit': 'QUIT'}
             for button_name, button_rect in self.buttons.items():
                 if button_name != 'back':
                     is_hovered = button_rect.collidepoint(mouse_pos)
@@ -291,10 +299,7 @@ class MenuState:
             color_scheme = self.button_colors['hover' if is_hovered else 'normal']
             self.draw_pixel_button(back_rect, color_scheme, 'BACK')
             
-        hint_font = pygame.font.Font(None, 20)
-        hint = hint_font.render(self.game.controls.hint, True, (255, 255, 255))
-        pygame.draw.rect(self.screen, (35, 27, 24), (0, self.game.height - 24, self.game.width, 24))
-        self.screen.blit(hint, (8, self.game.height - 20))
+        self.game.guide.draw(self.screen, self.game.controls)
         pygame.display.flip()
 
     def run(self):
@@ -375,6 +380,7 @@ class Game:
         self.menu_state = MenuState(self)
         self.in_menu = True
         self.controls = InputController(input_mode, camera_index)
+        self.guide = ControlsGuide()
 
     def load_image(self, path, size=None):
         try:
@@ -573,13 +579,15 @@ class Game:
             
     def handle_input(self):
         for event in pygame.event.get():
+            if self.guide.handle_event(event, self.controls):
+                continue
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 self.running = False
             elif event.type == KEYDOWN and event.key == K_F2:
                 self.controls.select_keyboard()
             elif event.type == KEYDOWN and event.key == K_F3:
                 self.controls.select_camera()
-        if not self.running:
+        if not self.running or self.guide.visible:
             return
 
         intent = self.controls.poll()
@@ -708,9 +716,12 @@ class Game:
                     self.handle_input()
                     if not self.running:
                         break
-                    self.update()
+                    if not self.guide.visible:
+                        self.update()
                 else:
                     for event in pygame.event.get():
+                        if self.guide.handle_event(event, self.controls):
+                            continue
                         if event.type == QUIT:
                             self.running = False
                         elif event.type == KEYDOWN:
@@ -982,6 +993,10 @@ class Game:
             self.play_single_sound('collect_tools', 0, 1)
     
     def draw(self):
+        if self.guide.visible:
+            self.guide.draw(self.screen, self.controls)
+            pygame.display.flip()
+            return
         self.screen.fill((135, 206, 235))
 
         if self.bird_health >= 75:
@@ -1110,10 +1125,7 @@ class Game:
                 self.play_single_sound('game_over', 0, 0.4)
                 self.game_over_playing = True
         
-        hint_font = pygame.font.Font(None, 20)
-        hint = hint_font.render(self.controls.hint, True, (255, 255, 255))
-        pygame.draw.rect(self.screen, (35, 27, 24), (0, self.height - 24, self.width, 24))
-        self.screen.blit(hint, (8, self.height - 20))
+        self.guide.draw(self.screen, self.controls)
         pygame.display.flip()
         
     def draw_ui(self):

@@ -68,7 +68,7 @@ The background is selected by the bird's current health. Collecting a recovery i
 
 ## How to play
 
-For gesture control, keep both hands visible to the webcam with enough light and space around them. Keyboard controls are available without a camera. On keyboards with media-function keys, you may need to hold Fn while pressing F2 or F3.
+For gesture control, keep both hands visible to the webcam with enough light and space around them. Keyboard controls are available without a camera. Press H or click GUIDE to read both control schemes and switch modes. Gameplay pauses while the guide is open.
 
 | Action | Control |
 | :--- | :--- |
@@ -78,8 +78,9 @@ For gesture control, keep both hands visible to the webcam with enough light and
 | Restart after game over | Press **R** with the game window focused |
 | Quit after game over | Press **Q** with the game window focused |
 | Keyboard movement / shooting | **WASD** or **arrow keys** / hold **Space** |
-| Switch to keyboard | **F2** |
-| Retry / switch to camera | **F3** |
+| Show / close the controls guide (pauses gameplay) | **H** or click **GUIDE** |
+| Switch to keyboard | **K** |
+| Retry / switch to camera | **C** |
 | Exit | **Esc** or close the game window |
 
 The game also opens a **Hand Tracking** window showing the camera feed and detected landmarks. Hand positions are processed locally by the current implementation.
@@ -125,7 +126,7 @@ The root launcher selects the game's working directory so the existing font and 
 
 | Symptom | What to check |
 | :--- | :--- |
-| Camera does not open or the bird will not move | Close other camera apps, check OS camera permissions, and confirm the default camera (index `0`) is available. The game switches to keyboard controls on camera errors. Use WASD / arrows and Space, then press F3 to retry the camera. |
+| Camera does not open or the bird will not move | Close other camera apps, check OS camera permissions, and confirm the default camera (index `0`) is available. The game switches to keyboard controls on camera errors. Use WASD / arrows and Space, then press C to retry the camera. |
 | `mediapipe` has no attribute `solutions` | Use a fresh Python 3.11 environment and the supplied requirements. The code uses the legacy `mp.solutions.hands` API. |
 | Font or audio files cannot be found | Launch with `python run.py` from the repository root, or run `test.py` from inside `main/`. |
 | Audio initialization fails | Check that the desktop session has an available audio device. The prototype expects audio to initialize. |
@@ -146,6 +147,7 @@ bird-in-the-city/
 └── main/
     ├── test.py               # Game implementation (not a test suite)
     ├── controls.py           # Camera and keyboard input adapters
+    ├── guide.py              # Controls guide and shared mode shortcuts
     ├── Animation/            # Bird sprites, backgrounds, effects and UI
     ├── font/                 # Pixel font
     ├── sfx/                  # Music and sound effects
@@ -180,7 +182,7 @@ See the [code guide](docs/ARCHITECTURE.md) for implementation details and next s
 
 ## Prototype status
 
-Camera and keyboard input live in `main/controls.py`; configuration, menus, gameplay, and rendering remain in `main/test.py`. Camera initialization and frame-processing errors switch to keyboard controls, with an on-screen mode hint. F2 selects keyboard control; F3 retries the camera.
+Camera and keyboard input live in `main/controls.py`; configuration, menus, gameplay, and rendering remain in `main/test.py`. Camera initialization and frame-processing errors switch to keyboard controls, with an on-screen mode hint. K selects keyboard control; C retries the camera.
 
 Run the automated checks from the repository root:
 

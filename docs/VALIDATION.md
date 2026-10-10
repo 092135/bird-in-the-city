@@ -37,3 +37,9 @@ Use Fn with F2/F3 if the keyboard assigns those keys to system media controls. N
 - Reproduced inherited spawn/combo counters before the fix. Replay now also clears those counters, transient animations, frame counters, slowdown state, and active sounds while retaining the input controller and high score.
 - All **16 tests passed** after the fix. Inspected the rendered game-over view with the explicit instruction to click the game window before pressing R.
 - These are simulated keyboard events; live-camera control remains outside this check.
+
+## In-game guide and Mac shortcuts
+
+- K selects keyboard; C starts/retries camera. Existing F2/F3 aliases remain available. H or the clickable GUIDE control opens a modal guide from menus, gameplay, or game over.
+- The guide explains both input modes, camera setup, replay, and focus; it includes clickable mode selectors. Gameplay updates and input intentions pause while it is open. Esc closes the guide before it can quit the game.
+- All **18 tests passed**, including the new letter shortcuts and modal input behavior. Menu and guide renders were visually inspected at 800 × 600. Live-camera recognition is not newly verified by these checks.

@@ -110,9 +110,9 @@ class InputController:
     @property
     def hint(self):
         if self.camera is not None:
-            return 'CAMERA | F2: keyboard | ESC: quit'
+            return 'CAMERA | K: keyboard | C: retry | ESC: quit'
         prefix = 'CAMERA UNAVAILABLE | ' if self.notice else ''
-        return prefix + 'WASD/Arrows: move | SPACE: fire | F3: camera'
+        return prefix + 'WASD/Arrows: move | SPACE: fire | C: camera'
 
     def select_keyboard(self):
         self.close()
@@ -125,7 +125,7 @@ class InputController:
             self.notice = ''
         except Exception as exc:
             self.notice = str(exc)
-            print(f'{exc}. Using keyboard: WASD/Arrows + Space. F3 retries camera.')
+            print(f'{exc}. Using keyboard: WASD/Arrows + Space. C retries camera.')
 
     def poll(self):
         if self.camera is not None:

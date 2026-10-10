@@ -183,6 +183,31 @@ class GameTests(unittest.TestCase):
             g.run()
         self.assertEqual(calls, 3)
 
+    def test_guide_pauses_input_and_supports_clickable_modes(self):
+        g = self.game
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
+        with patch.object(g.controls, 'poll') as poll:
+            g.handle_input()
+            self.assertTrue(g.guide.visible)
+            poll.assert_not_called()
+        with patch.object(g.controls, 'select_camera') as camera:
+            pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.guide.camera_button.center))
+            g.handle_input()
+            camera.assert_called_once()
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+        g.handle_input()
+        self.assertFalse(g.guide.visible)
+        self.assertTrue(g.running)
+
+    def test_mac_letter_shortcuts(self):
+        g = self.game
+        with patch.object(g.controls, 'select_keyboard') as keyboard, patch.object(g.controls, 'select_camera') as camera:
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_k))
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c))
+            g.handle_input()
+            keyboard.assert_called_once()
+            camera.assert_called_once()
+
     def test_camera_target_uses_original_smoothing(self):
         g = self.game
         x, y = g.bird_pos
