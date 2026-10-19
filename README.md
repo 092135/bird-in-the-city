@@ -68,13 +68,13 @@ The background is selected by the bird's current health. Collecting a recovery i
 
 ## How to play
 
-For gesture control, keep both hands visible to the webcam with enough light and space around them. Keyboard controls are available without a camera. Press H or click GUIDE to read both control schemes and switch modes. Gameplay pauses while the guide is open.
+For gesture control, keep both hands visible to the webcam with enough light and space around them. Keyboard controls are available without a camera. Click PLAY, choose keyboard/camera control, then choose an ammo mode. A short guide for your selected controls appears before enemies spawn; click START or press Enter when ready. H / GUIDE reopens those instructions and pauses gameplay. Return HOME to change either mode.
 
 | Action | Control |
 | :--- | :--- |
 | Start / read the story / quit | Click **PLAY**, **INTRO**, or **QUIT** on the menu |
 | Move the bird | Move your **right index fingertip**; flight is constrained to the left third of the game window |
-| Ammo mode | **Unlimited** by default: hold the pinch to keep firing without reloading. Choose **10-round magazine** for limited ammo; click **PLAY**, then choose a mode to start. During play, use the guide or press **1** (unlimited) / **2** (limited) to switch |
+| Ammo mode | **Unlimited** by default: hold the pinch to keep firing without reloading. Choose **10-round magazine** for limited ammo; click **PLAY**, then choose a mode to start. The selected ammo mode is locked for the round; return HOME to change it |
 | Shoot | Pinch your **left thumb and index finger** together; holding the pinch repeats shots after a cooldown |
 | Reload (limited mode, fewer than 10 rounds) | Open all five fingers of your **left hand** and hold for **0.5 seconds**; lowering/folding the hand interrupts reloading |
 | Restart after game over | Press **R** with the game window focused |
@@ -82,9 +82,10 @@ For gesture control, keep both hands visible to the webcam with enough light and
 | Keyboard movement / shooting | **WASD** or **arrow keys** / hold **Space** |
 | Keyboard reload (limited mode, fewer than 10 rounds) | Hold **E** for **0.5 seconds** |
 | Show / close the controls guide (pauses gameplay) | **H** or click **GUIDE** |
-| Switch to keyboard | **K** |
-| Retry / switch to camera | **C** |
-| Exit | **Esc** or close the game window |
+| Choose keyboard controls before starting | Click **KEYBOARD** or press **K** on the mode screen |
+| Choose camera controls before starting | Click **CAMERA** or press **C** on the mode screen |
+| Return to homepage | Click **HOME** or press **Esc** during play / after game over (Esc first closes an open guide) |
+| Exit | **QUIT** on the homepage, **Q** after game over, or close the window |
 
 The game also opens a **Hand Tracking** window showing the camera feed and detected landmarks. Hand positions are processed locally by the current implementation.
 
@@ -139,7 +140,7 @@ The root launcher selects the game's working directory so the existing font and 
 
 | Symptom | What to check |
 | :--- | :--- |
-| Camera does not open or the bird will not move | Close other camera apps, check OS camera permissions, and confirm the default camera (index `0`) is available. The game switches to keyboard controls on camera errors. Use WASD / arrows and Space, then press C to retry the camera. |
+| Camera does not open or the bird will not move | Close other camera apps, check OS camera permissions, and confirm the default camera (index `0`) is available. The game switches to keyboard controls on camera errors. Use WASD / arrows and Space, then return HOME and choose CAMERA to retry. |
 | `mediapipe` has no attribute `solutions` | Use a fresh Python 3.11 environment and the supplied requirements. The code uses the legacy `mp.solutions.hands` API. |
 | Font or audio files cannot be found | Launch with `python run.py` from the repository root, or run `test.py` from inside `main/`. |
 | Audio initialization fails | Check that the desktop session has an available audio device. The prototype expects audio to initialize. |
@@ -195,7 +196,7 @@ See the [code guide](docs/ARCHITECTURE.md) for implementation details and next s
 
 ## Prototype status
 
-Camera and keyboard input live in `main/controls.py`; configuration, menus, gameplay, and rendering remain in `main/test.py`. Camera initialization and frame-processing errors switch to keyboard controls, with an on-screen mode hint. K selects keyboard control; C retries the camera.
+Camera and keyboard input live in `main/controls.py`; configuration, menus, gameplay, and rendering remain in `main/test.py`. Camera failures retain automatic keyboard fallback. Manual mode changes are available on the pre-game mode screen; the active round stays locked until HOME.
 
 Run the automated checks from the repository root:
 

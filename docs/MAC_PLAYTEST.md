@@ -12,13 +12,13 @@ The first setup needs an internet connection and downloads several hundred MB. T
 
 The game revision is pinned in the installer so friends receive the same build. Running the command again retries incomplete setup without replacing an existing game install or its high score. The installer itself is fetched from this repository's main branch.
 
-The current build defaults to unlimited ammo. Click PLAY, then choose Unlimited or Limited to start. During play, use the guide or press 1 / 2 to switch. In limited mode, whenever below 10 rounds, open all five left-hand fingers for half a second to reload (keyboard: hold E). Replay keeps the selected mode; a new launch starts with unlimited ammo. Run the installation command again to download this build and update the launcher. Older builds and their score files remain in their release folders; scores are not automatically copied between builds.
+The current build defaults to unlimited ammo. Click PLAY, choose keyboard or camera controls, then choose Unlimited or Limited. Confirm the short guide with START / Enter. Controls and ammo mode stay locked during the round; use HOME / Esc to return to the homepage and change them. In limited mode, whenever below 10 rounds, open all five left-hand fingers for half a second to reload (keyboard: hold E). Replay keeps the selected mode; a new launch starts with unlimited ammo. Run the installation command again to download this build and update the launcher. Older builds and their score files remain in their release folders; scores are not automatically copied between builds.
 
 ## After the window opens
 
-1. Allow camera access if macOS asks. Click PLAY to start camera preview and gameplay.
+1. Allow camera access if macOS asks. Click PLAY, select CAMERA or KEYBOARD, then choose an ammo mode. Read the short guide and press Enter / START to begin.
 2. Right index finger moves the bird. Pinch the left thumb and index finger to shoot.
-3. Press H or click GUIDE for instructions. K selects keyboard; C retries camera.
+3. Press H or click GUIDE for instructions. Use HOME / Esc to return to the homepage and choose a different mode. Manual switching is disabled during a round.
 4. Keyboard mode uses WASD / arrow keys and Space. Click the game window first.
 5. After game over, press R to replay. Esc exits.
 

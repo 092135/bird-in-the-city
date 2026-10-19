@@ -26,7 +26,7 @@
 4. The left thumb tip (`4`) and index tip (`8`) trigger shooting when their normalized 2D distance is below `0.05`, subject to cooldown.
 5. Pygame updates hazards, bullets, collisions, power-ups, score, and level, then renders the scene. The loop targets 60 FPS; actual performance depends on the machine and camera.
 
-Keyboard input produces a relative movement vector; camera input produces a normalized absolute target. `Game.handle_input()` applies movement, clamps position, and owns shooting cooldown and invincibility timers. A camera failure closes its resources and reads keyboard input in the same frame, so timers continue. No detected hand produces a neutral intention, without treating it as a camera failure. K closes the camera; C retries the selected camera index.
+Keyboard input produces a relative movement vector; camera input produces a normalized absolute target. `Game.handle_input()` applies movement, clamps position, and owns shooting cooldown and invincibility timers. A camera failure closes its resources and reads keyboard input in the same frame, so timers continue. No detected hand produces a neutral intention, without treating it as a camera failure. K / C select the preferred input on the pre-game mode screen; camera capture starts only after the ammo choice. `start_round()` locks settings and shows contextual onboarding. `return_home()` releases camera resources, clears round state, and unlocks configuration. The main loop supports repeated menu/play cycles without closing Pygame.
 
 ## Visual state
 

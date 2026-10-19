@@ -152,7 +152,7 @@ class InputController:
             self.notice = ''
         except Exception as exc:
             self.notice = str(exc)
-            print(f'{exc}. Using keyboard: WASD/Arrows + Space. C retries camera.')
+            print(f'{exc}. Using keyboard: WASD/Arrows + Space. Return HOME to retry camera.')
 
     def poll(self):
         if self.camera is not None:

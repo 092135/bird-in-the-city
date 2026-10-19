@@ -184,13 +184,16 @@ class MenuState:
                               button_width, button_height)
         }
         
-        for name, y in [('play', 220), ('intro', 300), ('guide', 380), ('quit', 460)]:
+        for name, y in [('play', 230), ('intro', 340), ('quit', 450)]:
             self.buttons[name] = pygame.Rect(275, y, 250, 60)
         self.mode_buttons = {
-            'unlimited': pygame.Rect(235, 230, 330, 90),
-            'limited': pygame.Rect(235, 350, 330, 90),
-            'back': pygame.Rect(275, 480, 250, 60),
+            'unlimited': pygame.Rect(130, 290, 540, 80),
+            'limited': pygame.Rect(130, 390, 540, 80),
+            'back': pygame.Rect(275, 495, 250, 54),
         }
+
+        self.input_buttons = {'keyboard': pygame.Rect(130, 218, 260, 48),
+                              'camera': pygame.Rect(410, 218, 260, 48)}
 
         # 像素风格的配色方案
         self.button_colors = {
@@ -251,11 +254,11 @@ class MenuState:
 
     def handle_input(self):
         for event in pygame.event.get():
-            if self.current_state == 'modes' and not self.game.guide.visible:
+            if self.current_state in ('modes', 'intro') and not self.game.guide.visible:
                 if event.type == KEYDOWN and event.key == K_ESCAPE:
                     self.current_state = 'menu'
                     continue
-                if event.type == KEYDOWN and event.key in (K_1, K_2):
+                if self.current_state == 'modes' and event.type == KEYDOWN and event.key in (K_1, K_2):
                     self.game.set_ammo_mode('unlimited' if event.key == K_1 else 'limited')
                     return 'play'
             if self.game.guide.handle_event(event, self.game.controls):
@@ -265,7 +268,7 @@ class MenuState:
             if event.type != MOUSEBUTTONDOWN or event.button != 1:
                 continue
             if self.current_state == 'menu':
-                for name in ('play', 'intro', 'guide', 'quit'):
+                for name in ('play', 'intro', 'quit'):
                     if self.buttons[name].collidepoint(event.pos):
                         if name == 'quit':
                             return 'quit'
@@ -275,6 +278,10 @@ class MenuState:
                             self.current_state = 'modes' if name == 'play' else 'intro'
                         break
             elif self.current_state == 'modes':
+                for mode, rect in self.input_buttons.items():
+                    if rect.collidepoint(event.pos):
+                        self.game.select_input(mode)
+                        break
                 for mode, rect in self.mode_buttons.items():
                     if rect.collidepoint(event.pos):
                         if mode == 'back':
@@ -311,15 +318,35 @@ class MenuState:
                 title_font = pygame.font.Font(None, 28)
             for offset, color in [(2, (51, 34, 26)), (0, (255, 244, 230))]:
                 title = title_font.render('CHOOSE YOUR MODE', True, color)
-                self.screen.blit(title, title.get_rect(center=(400 + offset, 183 + offset)))
+                self.screen.blit(title, title.get_rect(center=(400 + offset, 175 + offset)))
+            for mode, rect in self.input_buttons.items():
+                selected = self.game.selected_input == mode
+                scheme = self.button_colors['hover' if selected else 'normal']
+                font = pygame.font.Font(None, 26)
+                pygame.draw.rect(self.screen, scheme['fill'], rect)
+                pygame.draw.rect(self.screen, (255, 204, 120) if selected else scheme['light'], rect, 2)
+                label = font.render(mode.upper() + (' [K]' if mode == 'keyboard' else ' [C]'), True, self.button_colors['text'])
+                self.screen.blit(label, label.get_rect(center=rect.center))
             for mode, label, detail in [
-                ('unlimited', 'UNLIMITED', '1 / Keep firing. No reload.'),
-                ('limited', 'LIMITED', '2 / 10 rounds. Open to reload.'),
+                ('unlimited', 'UNLIMITED', 'Keep firing. No reload.'),
+                ('limited', 'LIMITED', '10 rounds. Hold E / open hand to reload.'),
                 ('back', 'BACK', None),
             ]:
                 rect = self.mode_buttons[mode]
                 scheme = self.button_colors['hover' if rect.collidepoint(mouse_pos) else 'normal']
-                self.draw_pixel_button(rect, scheme, label, detail)
+                if mode == 'back':
+                    self.draw_pixel_button(rect, scheme, label)
+                    continue
+                pygame.draw.rect(self.screen, scheme['fill'], rect)
+                pygame.draw.rect(self.screen, scheme['light'], rect, 3)
+                badge = pygame.Rect(rect.x + 16, rect.y + 18, 44, 44)
+                pygame.draw.rect(self.screen, scheme['dark'], badge)
+                number = self.font.render('1' if mode == 'unlimited' else '2', True, self.button_colors['text'])
+                self.screen.blit(number, number.get_rect(center=badge.center))
+                label_image = pygame.font.Font('font/press_start_2p.ttf', 20).render(label, True, self.button_colors['text'])
+                self.screen.blit(label_image, (rect.x + 84, rect.y + 15))
+                detail_image = pygame.font.Font(None, 24).render(detail, True, (255, 224, 177))
+                self.screen.blit(detail_image, (rect.x + 84, rect.y + 48))
 
         # Draw back button in intro state
         elif self.current_state == 'intro':
@@ -348,6 +375,9 @@ class Game:
         if ammo_mode not in ('unlimited', 'limited'):
             raise ValueError(f'Unknown ammo mode: {ammo_mode}')
         self.ammo_mode = ammo_mode
+        self.round_locked = False
+        self.returning_home = False
+        self.selected_input = 'keyboard' if input_mode == 'keyboard' else 'camera'
         pygame.init()
         self.width = GameConfig.WINDOW_WIDTH
         self.height = GameConfig.WINDOW_HEIGHT
@@ -414,7 +444,7 @@ class Game:
 
         self.menu_state = MenuState(self)
         self.in_menu = True
-        self.controls = InputController(input_mode, camera_index)
+        self.controls = InputController('keyboard', camera_index)
         self.guide = ControlsGuide(self)
 
     def load_image(self, path, size=None):
@@ -616,13 +646,9 @@ class Game:
         for event in pygame.event.get():
             if self.guide.handle_event(event, self.controls):
                 continue
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            if event.type == QUIT:
                 self.running = False
-            elif event.type == KEYDOWN and event.key == K_F2:
-                self.controls.select_keyboard()
-            elif event.type == KEYDOWN and event.key == K_F3:
-                self.controls.select_camera()
-        if not self.running or self.guide.visible:
+        if not self.running or self.returning_home or self.guide.visible:
             self.reload_started_at = None
             self.reload_progress = 0.0
             return
@@ -651,6 +677,8 @@ class Game:
         self.frame_count += 1
 
     def set_ammo_mode(self, mode):
+        if self.round_locked:
+            return False
         if mode not in ('unlimited', 'limited'):
             raise ValueError(f'Unknown ammo mode: {mode}')
         if mode == self.ammo_mode:
@@ -766,25 +794,48 @@ class Game:
                     'health': 3 if enemy_type == 'large' else 1
                 })
 
+    def select_input(self, mode):
+        if self.round_locked:
+            return False
+        self.selected_input = mode
+        # Camera is opened only when a new round starts, after menu selection.
+        return True
+
+    def start_round(self):
+        self.reset_game(transition=False)
+        self.returning_home = False
+        self.in_menu = False
+        self.round_locked = True
+        if self.selected_input == 'camera':
+            self.controls.select_camera()
+        else:
+            self.controls.select_keyboard()
+        self.guide.visible = True
+        self.guide.onboarding = True
+
+    def return_home(self):
+        self.controls.select_keyboard()
+        self.round_locked = False
+        self.reset_game(transition=False)
+        self.returning_home = True
+        self.in_menu = True
+        self.guide.visible = self.guide.onboarding = False
+        self.menu_state.current_state = 'menu'
+
     def run(self):
-
-        self.play_single_sound('background_music', -1, 0.3) # Playback background music
+        self.play_single_sound('background_music', -1, 0.3)
         self.background_music_playing = True
-
         try:
-            if self.in_menu:
-                continue_game = self.menu_state.run()
-                if not continue_game:
-                    return
-                self.in_menu = False
-
-            self.running = True  # 确保running被设置
             while self.running:
-                if not self.game_over:
+                if self.in_menu:
+                    action = self.menu_state.handle_input()
+                    if action == 'quit':
+                        self.running = False
+                    elif action == 'play':
+                        self.start_round()
+                elif not self.game_over:
                     self.handle_input()
-                    if not self.running:
-                        break
-                    if not self.guide.visible:
+                    if self.running and not self.in_menu and not self.guide.visible:
                         self.update()
                 else:
                     for event in pygame.event.get():
@@ -793,17 +844,17 @@ class Game:
                         if event.type == QUIT:
                             self.running = False
                         elif event.type == KEYDOWN:
-                            if event.key == K_F2:
-                                self.controls.select_keyboard()
-                            elif event.key == K_F3:
-                                self.controls.select_camera()
-                            elif event.key == K_r:
+                            if event.key == K_r:
                                 self.play_single_sound('button_click', 0, 1.3)
                                 self.reset_game()
-                            elif event.key in (K_q, K_ESCAPE):
+                            elif event.key == K_q:
                                 self.running = False
-            
-                self.draw()
+                if not self.running:
+                    break
+                if self.in_menu:
+                    self.menu_state.draw()
+                else:
+                    self.draw()
                 self.clock.tick(60)
         finally:
             self.controls.close()
@@ -1368,12 +1419,12 @@ class Game:
         focus_hint = focus_font.render("Click this game window first, then press R", True, text_color)
         self.screen.blit(focus_hint, focus_hint.get_rect(center=(self.width // 2, self.height * 0.86)))
             
-    def reset_game(self):
+    def reset_game(self, transition=True):
         overlay = pygame.Surface((self.width, self.height))
         overlay.fill((0, 0, 0))
         overlay.set_alpha(128)
 
-        for alpha in range(128, -1, -16):  # 渐隐效果
+        for alpha in (range(128, -1, -16) if transition else []):  # 渐隐效果
             overlay.set_alpha(alpha)
             self.screen.blit(overlay, (0, 0))
             pygame.display.flip()

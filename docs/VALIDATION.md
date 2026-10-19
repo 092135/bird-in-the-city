@@ -94,3 +94,11 @@ Use Fn with F2/F3 if the keyboard assigns those keys to system media controls. N
 - Ran all **18 game tests** under the newly installed Python environment: passed. These use dummy video/audio and simulated inputs; they do not validate a friend's webcam or permissions.
 - The dependency preparation/download stage took approximately 12 minutes on the tested connection. First-install time depends on network speed; subsequent installed launches need no dependency download.
 - Intel Macs and a separate friend's computer were not tested. The existing MediaPipe wheel-metadata caveat above remains relevant.
+
+## Home navigation, onboarding, and round mode lock — 2026-10-19
+
+- Added a persistent HOME button and Esc navigation from play and game over. A full event-loop test enters a limited round, returns home, chooses unlimited, and enters another round without restarting the process.
+- PLAY opens a mode screen with input selection and two aligned ammo cards. Numeric badges, titles, and descriptions use fixed columns.
+- Choosing a mode shows a short contextual guide; enemies and controls wait for START / Enter. H reopens the guide during play. It is intentionally user-confirmed rather than disappearing after three seconds.
+- Voluntary input and ammo changes are locked for the round, including 1/2, K/C, and F2/F3. Returning home unlocks choices; replay retains the selected mode. Existing automatic keyboard fallback remains available when camera processing fails.
+- All **30 automated tests passed**. Inspected the home, mode picker, keyboard onboarding, and limited-mode gameplay renders at 800 × 600. These checks do not constitute live-camera or Windows testing.

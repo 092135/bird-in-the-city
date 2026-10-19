@@ -142,32 +142,29 @@ class GameTests(unittest.TestCase):
         g.reset_game()
         self.assertEqual(g.ammo_mode, 'unlimited')
 
-    def test_ammo_modes_selectable_from_menu_guide_and_keys(self):
+    def test_mode_selection_locks_for_round_and_replay(self):
         g = self.game
-        g.set_ammo_mode('unlimited')
         pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.menu_state.buttons['play'].center))
         self.assertIsNone(g.menu_state.handle_input())
         self.assertEqual(g.menu_state.current_state, 'modes')
-        self.assertEqual(g.ammo_mode, 'unlimited')
-        limited_rect = g.menu_state.mode_buttons['limited']
-        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=limited_rect.center))
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.menu_state.mode_buttons['limited'].center))
         self.assertEqual(g.menu_state.handle_input(), 'play')
-        self.assertEqual(g.ammo_mode, 'limited')
-        g.ammo, g.reload_started_at, g.reload_progress = 3, 100, 0.5
-        g.guide.visible = True
-        unlimited_rect = g.guide.ammo_buttons(422)[0][1]
-        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=unlimited_rect.center))
-        g.handle_input()
-        self.assertEqual((g.ammo_mode, g.ammo, g.reload_started_at, g.reload_progress),
-                         ('unlimited', 10, None, 0))
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2))
-        g.handle_input()
-        self.assertEqual(g.ammo_mode, 'limited')
-        g.reset_game()
-        self.assertEqual(g.ammo_mode, 'limited')
-        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_1))
-        g.handle_input()
-        self.assertEqual(g.ammo_mode, 'unlimited')
+        g.start_round()
+        self.assertTrue(g.round_locked)
+        self.assertTrue(g.guide.onboarding)
+        g.ammo = 3
+        g.guide.visible = False
+        with patch.object(g.controls, 'select_camera') as camera, patch.object(g.controls, 'select_keyboard') as keyboard:
+            for key in [pygame.K_1, pygame.K_2, pygame.K_c, pygame.K_k, pygame.K_F2, pygame.K_F3]:
+                pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key))
+            g.handle_input()
+            camera.assert_not_called()
+            keyboard.assert_not_called()
+        self.assertEqual((g.ammo_mode, g.ammo), ('limited', 3))
+        self.assertFalse(g.set_ammo_mode('unlimited'))
+        g.reset_game(transition=False)
+        self.assertEqual((g.ammo_mode, g.ammo), ('limited', 10))
+        self.assertTrue(g.round_locked)
 
     def test_default_ammo_mode_is_unlimited(self):
         self.assertEqual(self.default_ammo_mode, 'unlimited')
@@ -351,30 +348,32 @@ class GameTests(unittest.TestCase):
             g.run()
         self.assertEqual(calls, 3)
 
-    def test_guide_pauses_input_and_supports_clickable_modes(self):
+    def test_guide_pauses_input_and_resumes_without_mode_changes(self):
         g = self.game
+        g.start_round()
+        g.guide.visible = False
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h))
         with patch.object(g.controls, 'poll') as poll:
             g.handle_input()
             self.assertTrue(g.guide.visible)
             poll.assert_not_called()
-        with patch.object(g.controls, 'select_camera') as camera:
-            pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.guide.camera_button.center))
-            g.handle_input()
-            camera.assert_called_once()
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
         g.handle_input()
         self.assertFalse(g.guide.visible)
+        self.assertFalse(g.in_menu)
         self.assertTrue(g.running)
 
-    def test_mac_letter_shortcuts(self):
+    def test_mac_letter_shortcuts_select_on_menu_without_opening_camera(self):
         g = self.game
-        with patch.object(g.controls, 'select_keyboard') as keyboard, patch.object(g.controls, 'select_camera') as camera:
-            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_k))
+        g.menu_state.current_state = 'modes'
+        with patch.object(g.controls, 'select_camera') as camera:
             pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c))
-            g.handle_input()
-            keyboard.assert_called_once()
-            camera.assert_called_once()
+            g.menu_state.handle_input()
+            self.assertEqual(g.selected_input, 'camera')
+            camera.assert_not_called()
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_k))
+            g.menu_state.handle_input()
+            self.assertEqual(g.selected_input, 'keyboard')
 
     def test_camera_target_uses_original_smoothing(self):
         g = self.game
@@ -384,14 +383,68 @@ class GameTests(unittest.TestCase):
         self.assertAlmostEqual(g.bird_pos[0], x + (133 - x) * 0.15)
         self.assertAlmostEqual(g.bird_pos[1], y + (150 - y) * 0.15)
 
-    def test_switch_keys_reach_controller(self):
+    def test_onboarding_waits_for_confirmation_and_home_unlocks_settings(self):
         g = self.game
-        with patch.object(g.controls, 'select_keyboard') as keyboard, patch.object(g.controls, 'select_camera') as camera:
-            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F2))
-            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F3))
+        g.start_round()
+        with patch.object(g.controls, 'poll') as poll:
             g.handle_input()
-            keyboard.assert_called_once()
-            camera.assert_called_once()
+            poll.assert_not_called()
+        self.assertEqual(g.frame_count, 0)
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+        g.handle_input()
+        self.assertFalse(g.guide.visible)
+        self.assertEqual(g.frame_count, 1)
+        best = g.highscore
+        g.score = 200
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.guide.home_button.center))
+        g.handle_input()
+        self.assertTrue(g.in_menu)
+        self.assertFalse(g.round_locked)
+        self.assertEqual((g.score, g.highscore), (0, best))
+        self.assertEqual(g.menu_state.current_state, 'menu')
+        g.set_ammo_mode('limited')
+        self.assertEqual(g.ammo_mode, 'limited')
+
+    def test_full_home_select_play_home_select_flow_without_restart(self):
+        g = self.game
+        states = []
+        events = [
+            [pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.menu_state.buttons['play'].center)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+            [pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.menu_state.buttons['play'].center)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_1)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [pygame.event.Event(pygame.QUIT)],
+        ]
+        def next_events():
+            states.append((g.in_menu, g.ammo_mode, g.guide.visible))
+            return events.pop(0)
+        with patch.object(pygame.event, 'get', side_effect=next_events), patch.object(g.controls, 'poll', return_value=InputState()):
+            g.run()
+        self.assertEqual(states[2], (False, 'limited', True))
+        self.assertEqual(states[4], (True, 'limited', False))
+        self.assertEqual(states[6], (False, 'unlimited', True))
+        self.assertEqual(states[7], (False, 'unlimited', False))
+        self.assertEqual(events, [])
+
+    def test_home_from_game_over_releases_camera_and_returns_to_menu(self):
+        g = self.game
+        g.start_round()
+        g.guide.visible = False
+        g.game_over = True
+        camera = Mock()
+        g.controls.camera = camera
+        # Return from the death screen; then quit from the home menu.
+        with patch.object(pygame.event, 'get', side_effect=[
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+            [pygame.event.Event(pygame.QUIT)]
+        ]):
+            g.run()
+        camera.close.assert_called_once()
+        self.assertTrue(g.in_menu)
+        self.assertFalse(g.game_over)
 
     def test_exit_releases_input_resources(self):
         g = self.game
