@@ -9,6 +9,7 @@ class InputState:
     movement: tuple = (0.0, 0.0)
     target: tuple | None = None
     shoot: bool = False
+    reload: bool = False
 
 
 class KeyboardInput:
@@ -18,7 +19,8 @@ class KeyboardInput:
         dy = int(keys[pygame.K_s] or keys[pygame.K_DOWN]) - int(keys[pygame.K_w] or keys[pygame.K_UP])
         length = math.hypot(dx, dy)
         movement = (dx / length, dy / length) if length else (0.0, 0.0)
-        return InputState(movement=movement, shoot=bool(keys[pygame.K_SPACE]))
+        return InputState(movement=movement, shoot=bool(keys[pygame.K_SPACE]),
+                          reload=bool(keys[pygame.K_e]))
 
 
 class CameraInput:
@@ -46,8 +48,32 @@ class CameraInput:
             raise
 
     @staticmethod
+    def is_open_hand(landmarks):
+        # Joint angles and palm-relative distances also work when the hand rotates.
+        points = [(p.x * 4 / 3, p.y) for p in landmarks.landmark]
+
+        def distance(a, b):
+            return math.dist(points[a], points[b])
+
+        def straight(a, b, c):
+            u = (points[a][0] - points[b][0], points[a][1] - points[b][1])
+            v = (points[c][0] - points[b][0], points[c][1] - points[b][1])
+            length = math.hypot(*u) * math.hypot(*v)
+            return length > 1e-8 and (u[0] * v[0] + u[1] * v[1]) / length < -0.86
+
+        palm = distance(5, 17)
+        if palm < 1e-6:
+            return False
+        fingers_open = all(straight(base, pip, dip) and straight(pip, dip, tip)
+                           and distance(0, tip) > distance(0, pip) + palm * 0.2
+                           for base, pip, dip, tip in [(5, 6, 7, 8), (9, 10, 11, 12),
+                                                      (13, 14, 15, 16), (17, 18, 19, 20)])
+        return (fingers_open and straight(1, 2, 3) and straight(2, 3, 4)
+                and distance(4, 5) > palm * 0.6 and distance(4, 8) > palm * 0.6)
+
+    @staticmethod
     def interpret(results):
-        target, shoot = None, False
+        target, shoot, reload = None, False, False
         for landmarks, handedness in zip(results.multi_hand_landmarks or [],
                                          results.multi_handedness or []):
             tip = landmarks.landmark[8]
@@ -56,7 +82,8 @@ class CameraInput:
             elif handedness.classification[0].label == 'Left':
                 thumb = landmarks.landmark[4]
                 shoot = shoot or math.hypot(thumb.x - tip.x, thumb.y - tip.y) < 0.05
-        return InputState(target=target, shoot=shoot)
+                reload = reload or CameraInput.is_open_hand(landmarks)
+        return InputState(target=target, shoot=shoot, reload=reload and not shoot)
 
     def poll(self):
         ok, frame = self.cap.read()
@@ -110,9 +137,9 @@ class InputController:
     @property
     def hint(self):
         if self.camera is not None:
-            return 'CAMERA | K: keyboard | C: retry | ESC: quit'
+            return 'CAMERA | Empty? Open LEFT hand to reload | K: keyboard'
         prefix = 'CAMERA UNAVAILABLE | ' if self.notice else ''
-        return prefix + 'WASD/Arrows: move | SPACE: fire | C: camera'
+        return prefix + 'WASD/Arrows: move | SPACE: fire | E: reload | C: camera'
 
     def select_keyboard(self):
         self.close()

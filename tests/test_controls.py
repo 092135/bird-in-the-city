@@ -14,6 +14,41 @@ import pygame
 
 
 class ControlsTests(unittest.TestCase):
+    @staticmethod
+    def open_palm():
+        points = [NS(x=0.5, y=0.9) for _ in range(21)]
+        for indices, x, top in [((5, 6, 7, 8), 0.4, 0.18),
+                                ((9, 10, 11, 12), 0.5, 0.12),
+                                ((13, 14, 15, 16), 0.6, 0.18),
+                                ((17, 18, 19, 20), 0.7, 0.3)]:
+            for index, y in zip(indices, (0.6, 0.45, 0.35, top)):
+                points[index] = NS(x=x, y=y)
+        for index, x, y in [(1, 0.4, 0.8), (2, 0.3, 0.7),
+                             (3, 0.2, 0.6), (4, 0.1, 0.5)]:
+            points[index] = NS(x=x, y=y)
+        return NS(landmark=points)
+
+    def test_reload_requires_all_five_left_fingers(self):
+        hand = self.open_palm()
+        result = NS(multi_hand_landmarks=[hand],
+                    multi_handedness=[NS(classification=[NS(label='Left')])])
+        self.assertTrue(CameraInput.interpret(result).reload)
+        self.assertFalse(CameraInput.interpret(result).shoot)
+        for tip in (4, 8, 12, 16, 20):
+            folded = self.open_palm()
+            folded.landmark[tip] = NS(x=0.5, y=0.85)
+            self.assertFalse(CameraInput.is_open_hand(folded))
+        result.multi_handedness[0].classification[0].label = 'Right'
+        self.assertFalse(CameraInput.interpret(result).reload)
+        # Rotate the synthetic palm: recognition must not depend on fingers pointing up.
+        for point in hand.landmark:
+            point.x, point.y = point.y * 0.75, point.x * 4 / 3
+        self.assertTrue(CameraInput.is_open_hand(hand))
+
+    def test_keyboard_reload(self):
+        with patch.object(pygame.key, 'get_pressed', return_value=defaultdict(bool, {pygame.K_e: True})):
+            self.assertTrue(KeyboardInput().poll().reload)
+
     def test_keyboard_never_initializes_camera(self):
         with patch.object(controls, 'CameraInput') as camera:
             c = InputController('keyboard')
@@ -91,6 +126,60 @@ class ControlsTests(unittest.TestCase):
 
 
 class GameTests(unittest.TestCase):
+    def test_held_fire_stops_at_empty_and_cannot_spend_powerups(self):
+        g = self.game
+        with patch.object(g.controls, 'poll', return_value=InputState(shoot=True)), patch.object(g, 'play_single_sound') as sound:
+            for _ in range(500):
+                g.handle_input()
+        self.assertEqual((g.ammo, len(g.bullets)), (0, 10))
+        self.assertEqual(sound.call_count, 10)
+        g.effects['triple_shot']['uses'] = 3
+        self.assertFalse(g.fire_bullet())
+        self.assertEqual(g.effects['triple_shot']['uses'], 3)
+
+    def test_reload_hold_cancels_and_rearms_shooting(self):
+        g = self.game
+        g.ammo = 0
+        with patch.object(g.controls, 'poll', return_value=InputState(reload=True)), patch.object(pygame.time, 'get_ticks', side_effect=[100, 599]):
+            g.handle_input(); g.handle_input()
+        self.assertEqual(g.ammo, 0)
+        self.assertGreater(g.reload_progress, 0.9)
+        with patch.object(g.controls, 'poll', return_value=InputState()):
+            g.handle_input()
+        self.assertEqual(g.reload_progress, 0)
+        with patch.object(g.controls, 'poll', return_value=InputState(reload=True)), patch.object(pygame.time, 'get_ticks', side_effect=[600, 1100]):
+            g.handle_input(); g.draw(); g.handle_input()
+        self.assertEqual((g.ammo, len(g.bullets)), (10, 0))
+        with patch.object(g.controls, 'poll', return_value=InputState(shoot=True)):
+            g.handle_input()
+        self.assertEqual((g.ammo, len(g.bullets)), (9, 1))
+
+    def test_reload_only_when_empty_and_guide_cancels_hold(self):
+        g = self.game
+        g.ammo = 3
+        g.update_reload(InputState(reload=True))
+        self.assertEqual(g.ammo, 3)
+        g.ammo = 0
+        g.update_reload(InputState(reload=True))
+        g.update_reload(InputState(shoot=True, reload=True))
+        self.assertIsNone(g.reload_started_at)
+        g.update_reload(InputState(reload=True))
+        g.guide.visible = True
+        g.handle_input()
+        self.assertIsNone(g.reload_started_at)
+
+    def test_powered_volley_spends_one_round_and_replay_refills(self):
+        g = self.game
+        g.effects['split_shot']['uses'] = 2
+        self.assertTrue(g.fire_bullet())
+        self.assertEqual((g.ammo, len(g.bullets), g.effects['split_shot']['uses']), (9, 5, 1))
+        g.ammo = 0
+        g.update_reload(InputState(reload=True))
+        g.reset_game()
+        self.assertEqual(g.ammo, 10)
+        self.assertIsNone(g.reload_started_at)
+        self.assertEqual(g.reload_progress, 0)
+
     def setUp(self):
         from test import Game
         self.old_dir = Path.cwd()

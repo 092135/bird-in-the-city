@@ -20,6 +20,8 @@ class GameConfig:
     # Combat settings
     SHOOTING_DELAY = 20
     RAPID_FIRE_DELAY = 10
+    MAGAZINE_SIZE = 10
+    RELOAD_HOLD_MS = 500
     INVINCIBILITY_DURATION = 90
     
     # Power up settings
@@ -343,6 +345,9 @@ class Game:
         self.bird_size = GameConfig.BIRD_SIZE
         self.bird_health = GameConfig.BIRD_START_HEALTH
         self.shooting_delay = 0
+        self.ammo = GameConfig.MAGAZINE_SIZE
+        self.reload_started_at = None
+        self.reload_progress = 0.0
         self.invincible_timer = 0
         self.flash_effect = False
         self.frame_count = 0
@@ -588,6 +593,8 @@ class Game:
             elif event.type == KEYDOWN and event.key == K_F3:
                 self.controls.select_camera()
         if not self.running or self.guide.visible:
+            self.reload_started_at = None
+            self.reload_progress = 0.0
             return
 
         intent = self.controls.poll()
@@ -603,16 +610,35 @@ class Game:
 
         self.bird_pos[0] = max(30, min(self.width // 3 - 30, self.bird_pos[0]))
         self.bird_pos[1] = max(30, min(self.height - 30, self.bird_pos[1]))
-        if intent.shoot and self.shooting_delay <= 0:
-            self.fire_bullet()
-            self.shooting_delay = 10 if self.effects['rapid_fire']['duration'] > 0 else 20
+        self.update_reload(intent)
+        if intent.shoot and self.shooting_delay <= 0 and self.fire_bullet():
+            self.shooting_delay = (GameConfig.RAPID_FIRE_DELAY if self.effects['rapid_fire']['duration'] > 0
+                                   else GameConfig.SHOOTING_DELAY)
             self.play_single_sound(self.bullet_sound, 0, 0.85)
         # Timers continue even when the camera fails or no hand is detected.
         self.shooting_delay = max(0, self.shooting_delay - 1)
         self.invincible_timer = max(0, self.invincible_timer - 1)
         self.frame_count += 1
 
+    def update_reload(self, intent):
+        if self.ammo > 0 or not intent.reload or intent.shoot:
+            self.reload_started_at = None
+            self.reload_progress = 0.0
+            return
+        now = pygame.time.get_ticks()
+        if self.reload_started_at is None:
+            self.reload_started_at = now
+        self.reload_progress = min(1.0, (now - self.reload_started_at) / GameConfig.RELOAD_HOLD_MS)
+        if self.reload_progress >= 1.0:
+            self.ammo = GameConfig.MAGAZINE_SIZE
+            self.reload_started_at = None
+            self.reload_progress = 0.0
+
     def fire_bullet(self):
+        if self.ammo <= 0:
+            return False
+        # A powered volley consumes one round, regardless of projectile count.
+        self.ammo -= 1
         angles = set()  # 使用集合避免重复角度
         # 记录当前激活的效果
         active_effect = None
@@ -645,6 +671,7 @@ class Game:
             self.effects['triple_shot']['uses'] -= 1
         elif active_effect == 'split_shot':
             self.effects['split_shot']['uses'] -= 1
+        return True
     
     def spawn_enemies(self):
         self.enemy_spawn_timer += 1
@@ -1152,7 +1179,8 @@ class Game:
             'HP': f"{max(0, self.bird_health)}%",  # 简化 Health 为 HP
             'Score': f"{self.score}",
             'Best': f"{self.highscore}", 
-            'Level': f"{self.level}"
+            'Level': f"{self.level}",
+            'Ammo': f"{self.ammo}/{GameConfig.MAGAZINE_SIZE}"
         }
         
         shadow_color = (50, 50, 50)
@@ -1169,6 +1197,15 @@ class Game:
             text_surface = font.render(text, True, text_color)
             self.screen.blit(text_surface, (10, 10 + i * 30))
         
+        if self.ammo == 0:
+            hint = 'Open LEFT hand' if self.controls.mode == 'camera' else 'Hold E'
+            hint += ' to reload (0.5s)'
+            pygame.draw.rect(self.screen, (35, 27, 24), (10, 163, 285, 54))
+            label = pygame.font.Font(None, 24).render(hint, True, (255, 204, 120))
+            self.screen.blit(label, (18, 170))
+            pygame.draw.rect(self.screen, (85, 75, 65), (18, 200, 265, 8))
+            pygame.draw.rect(self.screen, (255, 204, 120), (18, 200, int(265 * self.reload_progress), 8))
+
         # 右上角效果显示
         margin = 20   # 向左移动起始位置，留出更多空间
         y = 10
@@ -1283,6 +1320,9 @@ class Game:
         self.last_pos = self.bird_pos.copy()
         self.bird_health = 100
         self.shooting_delay = 0
+        self.ammo = GameConfig.MAGAZINE_SIZE
+        self.reload_started_at = None
+        self.reload_progress = 0.0
         self.invincible_timer = 0
         self.score = 0
         self.level = 1

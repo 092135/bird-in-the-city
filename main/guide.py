@@ -60,13 +60,13 @@ class ControlsGuide:
         lines = [
             'Allow camera access. Keep both hands visible and well lit.',
             'Right index finger: move the bird. Left thumb + index pinch: shoot.',
-            'Hold the pinch to keep firing. Preview appears after PLAY.',
+            '10 rounds. When empty, open LEFT hand for 0.5s to reload.',
             'No camera? The game switches to keyboard controls.',
         ]
         for i, line in enumerate(lines):
             self.text(screen, line, (64, 190 + i * 25), 23)
         self.text(screen, 'KEYBOARD  /  press K or click Use keyboard', (64, 306), 28, (255, 204, 120))
-        self.text(screen, 'WASD or arrow keys: move. Hold SPACE: shoot.', (64, 342), 24)
+        self.text(screen, 'WASD/Arrows: move. SPACE: shoot. Empty? Hold E for 0.5s.', (64, 342), 23)
         self.text(screen, 'After game over: click the game window, then R to replay.', (64, 372), 23)
         self.text(screen, 'H: guide / resume. ESC: close guide, or quit during play.', (64, 402), 23)
         status = 'CAMERA UNAVAILABLE - keyboard active' if controls.notice else controls.mode.upper() + ' active'

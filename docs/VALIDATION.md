@@ -1,5 +1,13 @@
 # Validation record
 
+## Magazine and open-palm reload — 2026-10-19
+
+- All **24 tests passed** using the project virtual environment, dummy video/audio, real game assets, and simulated inputs.
+- Holding fire stops after 10 rounds. Empty shots produce no firing sound and consume no power-up uses. A powered volley consumes one round.
+- Only an empty magazine can reload: hold the left palm open (all five fingers extended), or hold E in keyboard mode, for 500 ms. Interrupted detection, shooting, and opening the guide cancel progress. Replay restores 10 rounds.
+- Synthetic landmarks check open left palm, folded fingers, right-hand exclusion, and in-plane rotation. These do not establish real-camera recognition accuracy.
+- Visually inspected 800 × 600 camera-mode empty-magazine/progress and controls-guide renders. No live-camera playtest or real audio output is claimed.
+
 Validated on 2026-10-09, macOS ARM64 (Apple M2 Pro), Python 3.12.14.
 
 ## Completed
