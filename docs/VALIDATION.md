@@ -1,5 +1,11 @@
 # Validation record
 
+## Menu mode-selector placement — 2026-10-19
+
+- Moved the menu's ammo choices into two compact pixel-font tabs attached beneath PLAY. Both share PLAY's combined width; an underline marks the selected mode. Removed the wide bottom controls that overlapped the bird artwork.
+- Adjusted the remaining menu-button spacing. Guide mode selection and 1 / 2 shortcuts retain their behavior.
+- Rendered both selection states and visually inspected the menu. The targeted menu/guide/keyboard mode-selection regression passed; the unchanged gameplay suite was not rerun.
+
 ## Unlimited and limited ammo modes — 2026-10-19
 
 - New launches default to unlimited ammo: holding pinch/Space continues firing with the original cooldown, without ammo consumption, reload instructions, or ammo HUD.

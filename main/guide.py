@@ -12,21 +12,37 @@ class ControlsGuide:
         self.close_button = pygame.Rect(524, 470, 210, 44)
 
     @staticmethod
-    def ammo_buttons(y):
+    def ammo_buttons(y, compact=False):
+        if compact:
+            return [('unlimited', pygame.Rect(275, y, 125, 30), '1 INFINITE'),
+                    ('limited', pygame.Rect(400, y, 125, 30), '2 LIMITED')]
         return [('unlimited', pygame.Rect(64, y, 320, 34), 'Unlimited ammo [1]'),
                 ('limited', pygame.Rect(414, y, 320, 34), '10-round magazine [2]')]
 
-    def handle_ammo_click(self, event, y):
+    def handle_ammo_click(self, event, y, compact=False):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            for mode, rect, _ in self.ammo_buttons(y):
+            for mode, rect, _ in self.ammo_buttons(y, compact):
                 if rect.collidepoint(event.pos):
                     self.game.set_ammo_mode(mode)
                     return True
         return False
 
-    def draw_ammo_modes(self, screen, y):
-        for mode, rect, label in self.ammo_buttons(y):
+    def draw_ammo_modes(self, screen, y, compact=False):
+        for mode, rect, label in self.ammo_buttons(y, compact):
             selected = self.game.ammo_mode == mode
+            if compact:
+                pygame.draw.rect(screen, (82, 54, 41) if selected else (51, 34, 26), rect)
+                pygame.draw.line(screen, (51, 34, 26), rect.topleft, (rect.right - 1, rect.top), 2)
+                try:
+                    font = pygame.font.Font('font/press_start_2p.ttf', 10)
+                except OSError:
+                    font = pygame.font.Font(None, 18)
+                color = (255, 232, 171) if selected else (179, 151, 121)
+                text = font.render(label, True, color)
+                screen.blit(text, text.get_rect(center=(rect.centerx, rect.centery - 1)))
+                if selected:
+                    pygame.draw.rect(screen, (255, 204, 120), (rect.x + 12, rect.bottom - 4, rect.width - 24, 2))
+                continue
             pygame.draw.rect(screen, (143, 86, 59) if selected else (43, 34, 29), rect)
             pygame.draw.rect(screen, (255, 204, 120) if selected else (143, 86, 59), rect, 2)
             self.text(screen, ('> ' if selected else '  ') + label, (rect.x + 12, rect.y + 8), 24)

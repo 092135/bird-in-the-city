@@ -145,7 +145,7 @@ class GameTests(unittest.TestCase):
     def test_ammo_modes_selectable_from_menu_guide_and_keys(self):
         g = self.game
         g.set_ammo_mode('unlimited')
-        limited_rect = g.guide.ammo_buttons(532)[1][1]
+        limited_rect = g.guide.ammo_buttons(280, compact=True)[1][1]
         pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=limited_rect.center))
         self.assertIsNone(g.menu_state.handle_input())
         self.assertEqual(g.ammo_mode, 'limited')

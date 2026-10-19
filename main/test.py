@@ -184,7 +184,7 @@ class MenuState:
                               button_width, button_height)
         }
         
-        for name, y in [('play', 220), ('intro', 300), ('guide', 380), ('quit', 460)]:
+        for name, y in [('play', 220), ('intro', 330), ('guide', 410), ('quit', 490)]:
             self.buttons[name] = pygame.Rect(275, y, 250, 60)
 
         # 像素风格的配色方案
@@ -244,7 +244,7 @@ class MenuState:
         for event in pygame.event.get():
             if self.game.guide.handle_event(event, self.game.controls):
                 continue
-            if self.current_state == 'menu' and self.game.guide.handle_ammo_click(event, 532):
+            if self.current_state == 'menu' and self.game.guide.handle_ammo_click(event, 280, compact=True):
                 continue
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 return 'quit'
@@ -304,7 +304,7 @@ class MenuState:
             self.draw_pixel_button(back_rect, color_scheme, 'BACK')
             
         if self.current_state == 'menu':
-            self.game.guide.draw_ammo_modes(self.screen, 532)
+            self.game.guide.draw_ammo_modes(self.screen, 280, compact=True)
         self.game.guide.draw(self.screen, self.game.controls)
         pygame.display.flip()
 
