@@ -1,5 +1,11 @@
 # Validation record
 
+## Compact pixel ammunition HUD — 2026-10-19
+
+- Replaced the large reload panel with ten pixel cartridges beneath the ammo count. Remaining rounds are gold; refilling slots show reload progress in green.
+- A small pixel-font instruction appears below capacity, hides when full, and reads RELOADING during an active reload. Power-up labels retain a fixed vertical position.
+- Rendered full, partial, empty, and reloading states using real assets and simulated camera input; visually inspected partial and reload views. This change only affects drawing; gameplay/input checks were not rerun.
+
 ## Reload anytime and right-side ammunition HUD — 2026-10-19
 
 - Supersedes the empty-magazine-only rule below: any magazine below 10 rounds can now be topped up by holding the left hand open (or E) for 500 ms.

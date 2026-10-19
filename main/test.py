@@ -1202,19 +1202,40 @@ class Game:
         ammo_x = self.width - margin - font.size(ammo_text)[0]
         self.screen.blit(font.render(ammo_text, True, shadow_color), (ammo_x + 2, 12))
         self.screen.blit(font.render(ammo_text, True, text_color), (ammo_x, 10))
-        y = 45
+        # Ten small pixel cartridges replace the large reload panel. The same
+        # slots fill during reload, so progress needs no separate UI surface.
+        slot_width, slot_gap = 11, 5
+        slots_width = GameConfig.MAGAZINE_SIZE * (slot_width + slot_gap) - slot_gap
+        slots_x = self.width - margin - slots_width
+        refill = (GameConfig.MAGAZINE_SIZE - self.ammo) * self.reload_progress
+        for index in range(GameConfig.MAGAZINE_SIZE):
+            x = slots_x + index * (slot_width + slot_gap)
+            pygame.draw.rect(self.screen, (45, 40, 35), (x, 40, slot_width, 18))
+            pygame.draw.rect(self.screen, (197, 181, 144), (x + 2, 42, 7, 14), 1)
+            if index < self.ammo:
+                pygame.draw.rect(self.screen, (245, 214, 132), (x + 2, 44, 7, 12))
+                pygame.draw.rect(self.screen, (255, 240, 185), (x + 3, 42, 5, 3))
+            else:
+                fill = max(0.0, min(1.0, refill - (index - self.ammo)))
+                height = round(14 * fill)
+                if height:
+                    pygame.draw.rect(self.screen, (172, 224, 176), (x + 2, 56 - height, 7, height))
+
         if self.ammo < GameConfig.MAGAZINE_SIZE:
-            hint = 'Open LEFT hand' if self.controls.mode == 'camera' else 'Hold E'
-            hint += ' to reload (0.5s)'
-            panel_x = self.width - margin - 285
-            pygame.draw.rect(self.screen, (35, 27, 24), (panel_x, 40, 285, 54))
-            label = pygame.font.Font(None, 24).render(hint, True, (255, 204, 120))
-            self.screen.blit(label, (panel_x + 8, 47))
-            pygame.draw.rect(self.screen, (85, 75, 65), (panel_x + 8, 77, 265, 8))
-            pygame.draw.rect(self.screen, (255, 204, 120), (panel_x + 8, 77, int(265 * self.reload_progress), 8))
-            y = 110
+            hint = 'OPEN LEFT HAND' if self.controls.mode == 'camera' else 'HOLD E'
+            if self.reload_started_at is not None:
+                hint = 'RELOADING'
+            try:
+                hint_font = pygame.font.Font('font/press_start_2p.ttf', 10)
+            except OSError:
+                hint_font = pygame.font.Font(None, 18)
+            color = (255, 214, 140) if self.ammo == 0 else (244, 237, 213)
+            hint_x = self.width - margin - hint_font.size(hint)[0]
+            self.screen.blit(hint_font.render(hint, True, shadow_color), (hint_x + 1, 65))
+            self.screen.blit(hint_font.render(hint, True, color), (hint_x, 64))
 
         # 右上角效果显示
+        y = 94  # Fixed position: effects do not jump when the magazine fills.
         for effect_name, effect in self.effects.items():
             if effect['duration'] > 0 or effect['uses'] > 0:
                 formatted_name = format_effect_name(effect_name)
