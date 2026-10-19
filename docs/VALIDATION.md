@@ -7,6 +7,7 @@
 - Only an empty magazine can reload: hold the left palm open (all five fingers extended), or hold E in keyboard mode, for 500 ms. Interrupted detection, shooting, and opening the guide cancel progress. Replay restores 10 rounds.
 - Synthetic landmarks check open left palm, folded fingers, right-hand exclusion, and in-plane rotation. These do not establish real-camera recognition accuracy.
 - Visually inspected 800 × 600 camera-mode empty-magazine/progress and controls-guide renders. No live-camera playtest or real audio output is claimed.
+- Updated the Mac installer's pinned gameplay revision to `8dd5e4dced1f491d1d25315a3c8ae77de322cc6b` and checked shell syntax. The earlier full installer validation below was for the previous build; a fresh network installation was not repeated for this change.
 
 Validated on 2026-10-09, macOS ARM64 (Apple M2 Pro), Python 3.12.14.
 
