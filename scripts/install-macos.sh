@@ -7,7 +7,7 @@ if [[ "$(uname -s)" != Darwin ]]; then
     exit 1
 fi
 
-GAME_REVISION=08f01dc8402b8419bcef7d5764f1f7cc2b2cb6ad
+GAME_REVISION=10b416db9f4b82a42b57f3f3eb7bc4e8e051a7d7
 GAME_HOME="${BIRD_INSTALL_DIR:-$HOME/Library/Application Support/BirdInTheCity}"
 GAME_SOURCE="$GAME_HOME/releases/$GAME_REVISION"
 GAME_UV="$GAME_HOME/tools/uv"
@@ -60,9 +60,9 @@ fi
     cat <<'LAUNCHER'
 export MPLCONFIGDIR="$GAME_HOME/matplotlib"
 cd "$GAME_SOURCE"
-echo 'Click PLAY. Right index finger: move; left pinch: shoot.'
+echo 'Click PLAY, choose controls and ammo, then press START / Enter.'
 echo 'Default: unlimited ammo. 1: unlimited | 2: 10 rounds (open LEFT hand / hold E to reload).'
-echo 'K: keyboard | C: camera | H: guide | R: replay after game over'
+echo 'HOME / ESC: change modes | H: guide | R: replay after game over'
 "$GAME_HOME/venv/bin/python" "$GAME_SOURCE/run.py" "$@"
 LAUNCHER
 } > "$GAME_LAUNCHER"
@@ -78,7 +78,7 @@ fi
 echo
 echo "Installed. To play next time, double-click: $GAME_LAUNCHER"
 echo 'If macOS asks for camera access, allow it for the launching app.'
-echo 'If camera control is unavailable, press K for keyboard controls.'
+echo 'If camera control fails, keyboard fallback is automatic. Use HOME to retry.'
 # Keep stdin attached to the terminal when the installer was piped into bash.
 if [[ -t 1 ]]; then
     /bin/bash "$GAME_LAUNCHER" "$@" < /dev/tty
