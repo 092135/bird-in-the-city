@@ -244,6 +244,8 @@ class MenuState:
         for event in pygame.event.get():
             if self.game.guide.handle_event(event, self.game.controls):
                 continue
+            if self.current_state == 'menu' and self.game.guide.handle_ammo_click(event, 532):
+                continue
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 return 'quit'
             elif event.type == KEYDOWN and event.key == K_F2:
@@ -301,6 +303,8 @@ class MenuState:
             color_scheme = self.button_colors['hover' if is_hovered else 'normal']
             self.draw_pixel_button(back_rect, color_scheme, 'BACK')
             
+        if self.current_state == 'menu':
+            self.game.guide.draw_ammo_modes(self.screen, 532)
         self.game.guide.draw(self.screen, self.game.controls)
         pygame.display.flip()
 
@@ -317,7 +321,10 @@ class MenuState:
             self.clock.tick(60)
 
 class Game:
-    def __init__(self, input_mode="auto", camera_index=0):
+    def __init__(self, input_mode="auto", camera_index=0, ammo_mode='unlimited'):
+        if ammo_mode not in ('unlimited', 'limited'):
+            raise ValueError(f'Unknown ammo mode: {ammo_mode}')
+        self.ammo_mode = ammo_mode
         pygame.init()
         self.width = GameConfig.WINDOW_WIDTH
         self.height = GameConfig.WINDOW_HEIGHT
@@ -385,7 +392,7 @@ class Game:
         self.menu_state = MenuState(self)
         self.in_menu = True
         self.controls = InputController(input_mode, camera_index)
-        self.guide = ControlsGuide()
+        self.guide = ControlsGuide(self)
 
     def load_image(self, path, size=None):
         try:
@@ -620,8 +627,18 @@ class Game:
         self.invincible_timer = max(0, self.invincible_timer - 1)
         self.frame_count += 1
 
+    def set_ammo_mode(self, mode):
+        if mode not in ('unlimited', 'limited'):
+            raise ValueError(f'Unknown ammo mode: {mode}')
+        if mode == self.ammo_mode:
+            return
+        self.ammo_mode = mode
+        self.ammo = GameConfig.MAGAZINE_SIZE
+        self.reload_started_at = None
+        self.reload_progress = 0.0
+
     def update_reload(self, intent):
-        if self.ammo >= GameConfig.MAGAZINE_SIZE or not intent.reload or intent.shoot:
+        if self.ammo_mode == 'unlimited' or self.ammo >= GameConfig.MAGAZINE_SIZE or not intent.reload or intent.shoot:
             self.reload_started_at = None
             self.reload_progress = 0.0
             return
@@ -635,10 +652,11 @@ class Game:
             self.reload_progress = 0.0
 
     def fire_bullet(self):
-        if self.ammo <= 0:
+        if self.ammo_mode == 'limited' and self.ammo <= 0:
             return False
         # A powered volley consumes one round, regardless of projectile count.
-        self.ammo -= 1
+        if self.ammo_mode == 'limited':
+            self.ammo -= 1
         angles = set()  # 使用集合避免重复角度
         # 记录当前激活的效果
         active_effect = None
@@ -1196,6 +1214,24 @@ class Game:
             text_surface = font.render(text, True, text_color)
             self.screen.blit(text_surface, (10, 10 + i * 30))
         
+        # Unlimited mode restores the original uncluttered HUD.
+        if self.ammo_mode == 'limited':
+            self.draw_ammo_ui(font, shadow_color, text_color)
+        margin = 20
+        y = 94 if self.ammo_mode == 'limited' else 10
+        for effect_name, effect in self.effects.items():
+            if effect['duration'] > 0 or effect['uses'] > 0:
+                formatted_name = format_effect_name(effect_name)
+                if effect['duration'] > 0:
+                    text = f"{formatted_name}: {effect['duration'] // 60}s"
+                else:
+                    text = f"{formatted_name}: {effect['uses']}"
+                x = self.width - font.size(text)[0] - margin
+                self.screen.blit(font.render(text, True, shadow_color), (x + 2, y + 2))
+                self.screen.blit(font.render(text, True, text_color), (x, y))
+                y += 25
+
+    def draw_ammo_ui(self, font, shadow_color, text_color):
         # Keep ammunition together on the right, above active power-ups.
         margin = 20
         ammo_text = f'Ammo: {self.ammo}/{GameConfig.MAGAZINE_SIZE}'
@@ -1234,29 +1270,6 @@ class Game:
             self.screen.blit(hint_font.render(hint, True, shadow_color), (hint_x + 1, 65))
             self.screen.blit(hint_font.render(hint, True, color), (hint_x, 64))
 
-        # 右上角效果显示
-        y = 94  # Fixed position: effects do not jump when the magazine fills.
-        for effect_name, effect in self.effects.items():
-            if effect['duration'] > 0 or effect['uses'] > 0:
-                formatted_name = format_effect_name(effect_name)
-                if effect['duration'] > 0:
-                    text = f"{formatted_name}: {effect['duration'] // 60}s"
-                else:
-                    text = f"{formatted_name}: {effect['uses']}"
-                
-                # 获取文本尺寸
-                text_width, _ = font.size(text)
-                # 从右边缘向左计算位置
-                x = self.width - text_width - margin
-                
-                # 阴影
-                shadow_surface = font.render(text, True, shadow_color)
-                self.screen.blit(shadow_surface, (x + 2, y + 2))
-                
-                # 主文本
-                text_surface = font.render(text, True, text_color)
-                self.screen.blit(text_surface, (x, y))
-                y += 25
     
     def draw_game_over(self):
         # 加载游戏结束图片并缩放至全屏

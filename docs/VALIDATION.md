@@ -1,5 +1,13 @@
 # Validation record
 
+## Unlimited and limited ammo modes — 2026-10-19
+
+- New launches default to unlimited ammo: holding pinch/Space continues firing with the original cooldown, without ammo consumption, reload instructions, or ammo HUD.
+- Select Unlimited or 10-round magazine using clickable buttons in the main menu / H guide, or press 1 / 2 during play. Changing modes refills the magazine and clears reload progress; selecting the current mode does not refill. Replay retains the selected mode.
+- Limited mode retains partial-magazine top-ups, the half-second reload hold, and pixel cartridge HUD.
+- All **27 tests passed**, including unlimited sustained fire, default mode, menu/guide/keyboard mode selection, switching from an empty magazine, replay retention, and existing limited-ammo regressions.
+- Rendered and visually inspected the menu selector, limited-mode guide, and unlimited gameplay using real assets and simulated input. These checks do not establish live-camera accuracy.
+
 ## Compact pixel ammunition HUD — 2026-10-19
 
 - Replaced the large reload panel with ten pixel cartridges beneath the ammo count. Remaining rounds are gold; refilling slots show reload progress in green.

@@ -126,6 +126,48 @@ class ControlsTests(unittest.TestCase):
 
 
 class GameTests(unittest.TestCase):
+    def test_unlimited_keeps_firing_without_reload_or_ammo_hud(self):
+        g = self.game
+        g.set_ammo_mode('unlimited')
+        g.ammo = 0  # Even inherited empty state cannot block unlimited shots.
+        with patch.object(g.controls, 'poll', return_value=InputState(shoot=True)):
+            for _ in range(500):
+                g.handle_input()
+        self.assertEqual(len(g.bullets), 25)
+        g.update_reload(InputState(reload=True))
+        self.assertIsNone(g.reload_started_at)
+        with patch.object(g, 'draw_ammo_ui') as ammo_ui:
+            g.draw()
+        ammo_ui.assert_not_called()
+        g.reset_game()
+        self.assertEqual(g.ammo_mode, 'unlimited')
+
+    def test_ammo_modes_selectable_from_menu_guide_and_keys(self):
+        g = self.game
+        g.set_ammo_mode('unlimited')
+        limited_rect = g.guide.ammo_buttons(532)[1][1]
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=limited_rect.center))
+        self.assertIsNone(g.menu_state.handle_input())
+        self.assertEqual(g.ammo_mode, 'limited')
+        g.ammo, g.reload_started_at, g.reload_progress = 3, 100, 0.5
+        g.guide.visible = True
+        unlimited_rect = g.guide.ammo_buttons(422)[0][1]
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=unlimited_rect.center))
+        g.handle_input()
+        self.assertEqual((g.ammo_mode, g.ammo, g.reload_started_at, g.reload_progress),
+                         ('unlimited', 10, None, 0))
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2))
+        g.handle_input()
+        self.assertEqual(g.ammo_mode, 'limited')
+        g.reset_game()
+        self.assertEqual(g.ammo_mode, 'limited')
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_1))
+        g.handle_input()
+        self.assertEqual(g.ammo_mode, 'unlimited')
+
+    def test_default_ammo_mode_is_unlimited(self):
+        self.assertEqual(self.default_ammo_mode, 'unlimited')
+
     def test_held_fire_stops_at_empty_and_cannot_spend_powerups(self):
         g = self.game
         with patch.object(g.controls, 'poll', return_value=InputState(shoot=True)), patch.object(g, 'play_single_sound') as sound:
@@ -194,6 +236,8 @@ class GameTests(unittest.TestCase):
         self.old_dir = Path.cwd()
         os.chdir(Path(__file__).resolve().parents[1] / 'main')
         self.game = Game(input_mode='keyboard')
+        self.default_ammo_mode = self.game.ammo_mode
+        self.game.set_ammo_mode('limited')
         self.game.save_highscore = Mock()  # Never change the user's score in tests.
 
     def tearDown(self):
