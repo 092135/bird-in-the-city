@@ -1,5 +1,11 @@
 # Validation record
 
+## Choose ammo mode after PLAY — 2026-10-19
+
+- The home menu again shows only PLAY, INTRO, GUIDE, and QUIT. PLAY opens a separate mode picker using the existing pixel button style.
+- Clicking Unlimited / Limited (or pressing 1 / 2 on that page) selects the mode and starts gameplay. BACK / Esc returns to the home menu. The guide continues to pause and consume its own inputs.
+- All **28 tests passed**, including the two-step start flow, both selection shortcuts, back navigation, guide behavior, and prior gameplay regressions. Rendered the home menu and mode picker, and visually inspected the picker.
+
 ## Menu mode-selector placement — 2026-10-19
 
 - Moved the menu's ammo choices into two compact pixel-font tabs attached beneath PLAY. Both share PLAY's combined width; an underline marks the selected mode. Removed the wide bottom controls that overlapped the bird artwork.

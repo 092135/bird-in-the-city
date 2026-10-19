@@ -74,7 +74,7 @@ For gesture control, keep both hands visible to the webcam with enough light and
 | :--- | :--- |
 | Start / read the story / quit | Click **PLAY**, **INTRO**, or **QUIT** on the menu |
 | Move the bird | Move your **right index fingertip**; flight is constrained to the left third of the game window |
-| Ammo mode | **Unlimited** by default: hold the pinch to keep firing without reloading. Choose **10-round magazine** for limited ammo; click a mode in the menu/guide or press **1** (unlimited) / **2** (limited) anytime |
+| Ammo mode | **Unlimited** by default: hold the pinch to keep firing without reloading. Choose **10-round magazine** for limited ammo; click **PLAY**, then choose a mode to start. During play, use the guide or press **1** (unlimited) / **2** (limited) to switch |
 | Shoot | Pinch your **left thumb and index finger** together; holding the pinch repeats shots after a cooldown |
 | Reload (limited mode, fewer than 10 rounds) | Open all five fingers of your **left hand** and hold for **0.5 seconds**; lowering/folding the hand interrupts reloading |
 | Restart after game over | Press **R** with the game window focused |

@@ -156,7 +156,7 @@ class MenuState:
         self.screen = game.screen
         self.clock = game.clock
         self.running = True
-        self.current_state = 'menu'  # 'menu' or 'intro'
+        self.current_state = 'menu'  # menu, modes, or intro
         
         # Load menu backgrounds
         self.menu_bg = self.load_image('Animation/Effects/GameMenu.PNG', 
@@ -184,8 +184,13 @@ class MenuState:
                               button_width, button_height)
         }
         
-        for name, y in [('play', 220), ('intro', 330), ('guide', 410), ('quit', 490)]:
+        for name, y in [('play', 220), ('intro', 300), ('guide', 380), ('quit', 460)]:
             self.buttons[name] = pygame.Rect(275, y, 250, 60)
+        self.mode_buttons = {
+            'unlimited': pygame.Rect(235, 230, 330, 90),
+            'limited': pygame.Rect(235, 350, 330, 90),
+            'back': pygame.Rect(275, 480, 250, 60),
+        }
 
         # 像素风格的配色方案
         self.button_colors = {
@@ -209,7 +214,7 @@ class MenuState:
             print("Pixel font not found, using default font")
             self.font = pygame.font.Font(None, 48)  # 相应增加默认字体大小
 
-    def draw_pixel_button(self, rect, color_scheme, text):
+    def draw_pixel_button(self, rect, color_scheme, text, subtitle=None):
         """Draw a pixel art style button"""
         # 主体填充
         pygame.draw.rect(self.screen, color_scheme['fill'], rect)
@@ -231,56 +236,59 @@ class MenuState:
         
         # 渲染文字
         text_surface = self.font.render(text, True, self.button_colors['text'])
-        text_rect = text_surface.get_rect(center=rect.center)
+        text_rect = text_surface.get_rect(center=(rect.centerx, rect.centery - 12 if subtitle else rect.centery))
         self.screen.blit(text_surface, text_rect)
+        if subtitle:
+            try:
+                small_font = pygame.font.Font('font/press_start_2p.ttf', 10)
+            except OSError:
+                small_font = pygame.font.Font(None, 18)
+            detail = small_font.render(subtitle, True, (255, 224, 177))
+            self.screen.blit(detail, detail.get_rect(center=(rect.centerx, rect.bottom - 20)))
 
     def load_image(self, path, size=None):
         return self.game.load_image(path, size)
 
     def handle_input(self):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_clicked = False
-        
         for event in pygame.event.get():
+            if self.current_state == 'modes' and not self.game.guide.visible:
+                if event.type == KEYDOWN and event.key == K_ESCAPE:
+                    self.current_state = 'menu'
+                    continue
+                if event.type == KEYDOWN and event.key in (K_1, K_2):
+                    self.game.set_ammo_mode('unlimited' if event.key == K_1 else 'limited')
+                    return 'play'
             if self.game.guide.handle_event(event, self.game.controls):
-                continue
-            if self.current_state == 'menu' and self.game.guide.handle_ammo_click(event, 280, compact=True):
                 continue
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 return 'quit'
-            elif event.type == KEYDOWN and event.key == K_F2:
-                self.game.controls.select_keyboard()
-            elif event.type == KEYDOWN and event.key == K_F3:
-                self.game.controls.select_camera()
-            elif event.type == MOUSEBUTTONDOWN:
-                mouse_clicked = True
-                
-        # Handle menu state
-        if self.current_state == 'menu':
-            for button_name, button_rect in self.buttons.items():
-                if button_name != 'back':  # Don't show back button in main menu
-                    if button_rect.collidepoint(mouse_pos):
-                        if mouse_clicked:
-                            if button_name == 'play':
-                                return 'play'
-                            elif button_name == 'guide':
-                                self.game.guide.visible = True
-                            elif button_name == 'intro':
-                                self.current_state = 'intro'
-                            elif button_name == 'quit':
-                                return 'quit'
-        
-        # Handle intro state
-        elif self.current_state == 'intro':
-            if self.buttons['back'].collidepoint(mouse_pos):
-                if mouse_clicked:
-                    self.current_state = 'menu'
-                    
+            if event.type != MOUSEBUTTONDOWN or event.button != 1:
+                continue
+            if self.current_state == 'menu':
+                for name in ('play', 'intro', 'guide', 'quit'):
+                    if self.buttons[name].collidepoint(event.pos):
+                        if name == 'quit':
+                            return 'quit'
+                        if name == 'guide':
+                            self.game.guide.visible = True
+                        else:
+                            self.current_state = 'modes' if name == 'play' else 'intro'
+                        break
+            elif self.current_state == 'modes':
+                for mode, rect in self.mode_buttons.items():
+                    if rect.collidepoint(event.pos):
+                        if mode == 'back':
+                            self.current_state = 'menu'
+                            break
+                        self.game.set_ammo_mode(mode)
+                        return 'play'
+            elif self.buttons['back'].collidepoint(event.pos):
+                self.current_state = 'menu'
         return None
 
     def draw(self):
         # Draw background based on current state
-        if self.current_state == 'menu':
+        if self.current_state in ('menu', 'modes'):
             self.screen.blit(self.menu_bg, (0, 0))
         else:  # intro state
             self.screen.blit(self.intro_bg, (0, 0))
@@ -296,6 +304,23 @@ class MenuState:
                     color_scheme = self.button_colors['hover' if is_hovered else 'normal']
                     self.draw_pixel_button(button_rect, color_scheme, button_labels[button_name])
         
+        elif self.current_state == 'modes':
+            try:
+                title_font = pygame.font.Font('font/press_start_2p.ttf', 16)
+            except OSError:
+                title_font = pygame.font.Font(None, 28)
+            for offset, color in [(2, (51, 34, 26)), (0, (255, 244, 230))]:
+                title = title_font.render('CHOOSE YOUR MODE', True, color)
+                self.screen.blit(title, title.get_rect(center=(400 + offset, 183 + offset)))
+            for mode, label, detail in [
+                ('unlimited', 'UNLIMITED', '1 / Keep firing. No reload.'),
+                ('limited', 'LIMITED', '2 / 10 rounds. Open to reload.'),
+                ('back', 'BACK', None),
+            ]:
+                rect = self.mode_buttons[mode]
+                scheme = self.button_colors['hover' if rect.collidepoint(mouse_pos) else 'normal']
+                self.draw_pixel_button(rect, scheme, label, detail)
+
         # Draw back button in intro state
         elif self.current_state == 'intro':
             back_rect = self.buttons['back']
@@ -303,8 +328,6 @@ class MenuState:
             color_scheme = self.button_colors['hover' if is_hovered else 'normal']
             self.draw_pixel_button(back_rect, color_scheme, 'BACK')
             
-        if self.current_state == 'menu':
-            self.game.guide.draw_ammo_modes(self.screen, 280, compact=True)
         self.game.guide.draw(self.screen, self.game.controls)
         pygame.display.flip()
 

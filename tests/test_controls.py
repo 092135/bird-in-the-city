@@ -145,9 +145,13 @@ class GameTests(unittest.TestCase):
     def test_ammo_modes_selectable_from_menu_guide_and_keys(self):
         g = self.game
         g.set_ammo_mode('unlimited')
-        limited_rect = g.guide.ammo_buttons(280, compact=True)[1][1]
-        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=limited_rect.center))
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=g.menu_state.buttons['play'].center))
         self.assertIsNone(g.menu_state.handle_input())
+        self.assertEqual(g.menu_state.current_state, 'modes')
+        self.assertEqual(g.ammo_mode, 'unlimited')
+        limited_rect = g.menu_state.mode_buttons['limited']
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=limited_rect.center))
+        self.assertEqual(g.menu_state.handle_input(), 'play')
         self.assertEqual(g.ammo_mode, 'limited')
         g.ammo, g.reload_started_at, g.reload_progress = 3, 100, 0.5
         g.guide.visible = True
@@ -167,6 +171,28 @@ class GameTests(unittest.TestCase):
 
     def test_default_ammo_mode_is_unlimited(self):
         self.assertEqual(self.default_ammo_mode, 'unlimited')
+
+    def test_mode_picker_back_escape_shortcuts_and_guide_pause(self):
+        g = self.game
+        menu = g.menu_state
+        menu.current_state = 'modes'
+        pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=menu.mode_buttons['back'].center))
+        self.assertIsNone(menu.handle_input())
+        self.assertEqual(menu.current_state, 'menu')
+        menu.current_state = 'modes'
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+        self.assertIsNone(menu.handle_input())
+        self.assertEqual(menu.current_state, 'menu')
+        for key, mode in [(pygame.K_1, 'unlimited'), (pygame.K_2, 'limited')]:
+            menu.current_state = 'modes'
+            g.guide.visible = True
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key))
+            self.assertIsNone(menu.handle_input())
+            self.assertTrue(g.guide.visible)
+            g.guide.visible = False
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key))
+            self.assertEqual(menu.handle_input(), 'play')
+            self.assertEqual(g.ammo_mode, mode)
 
     def test_held_fire_stops_at_empty_and_cannot_spend_powerups(self):
         g = self.game
