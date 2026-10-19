@@ -7,7 +7,7 @@ if [[ "$(uname -s)" != Darwin ]]; then
     exit 1
 fi
 
-GAME_REVISION=942b56f292730d96c65b9c3159d1a17c0bd0da33
+GAME_REVISION=50b9edfb7c4b3e9e2e61b12f6df2287f9ff907db
 GAME_HOME="${BIRD_INSTALL_DIR:-$HOME/Library/Application Support/BirdInTheCity}"
 GAME_SOURCE="$GAME_HOME/releases/$GAME_REVISION"
 GAME_UV="$GAME_HOME/tools/uv"
