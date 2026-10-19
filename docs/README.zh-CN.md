@@ -44,6 +44,16 @@
 
 ## 本地运行
 
+Mac 朋友首次试玩，打开终端粘贴下面一行，会自动下载游戏、准备 Python 和依赖并启动：
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/092135/bird-in-the-city/main/scripts/install-macos.sh)"
+```
+
+首次需要联网下载较多依赖；以后双击 `~/Applications` 中的 `Bird in the City.command` 即可。详见[Mac 试玩说明](MAC_PLAYTEST.md)。
+
+以下是开发者手动安装方式。
+
 准备 Python 3.11 或 3.12，以及能正常使用图形界面和音频设备的电脑。手势模式需要摄像头，键盘模式不需要。
 
 ```bash

@@ -43,3 +43,12 @@ Use Fn with F2/F3 if the keyboard assigns those keys to system media controls. N
 - K selects keyboard; C starts/retries camera. Existing F2/F3 aliases remain available. H or the clickable GUIDE control opens a modal guide from menus, gameplay, or game over.
 - The guide explains both input modes, camera setup, replay, and focus; it includes clickable mode selectors. Gameplay updates and input intentions pause while it is open. Esc closes the guide before it can quit the game.
 - All **18 tests passed**, including the new letter shortcuts and modal input behavior. Menu and guide renders were visually inspected at 800 × 600. Live-camera recognition is not newly verified by these checks.
+
+## Mac friend installer — 2026-10-19
+
+- Added `scripts/install-macos.sh` and the one-command Mac playtest guide. The installer pins gameplay revision `9babc6d78778a391a0c0bd9a922f50ea0f1cb0db`.
+- Completed a fresh installation in a temporary directory on macOS ARM64 using the actual official uv installer, a newly downloaded managed Python 3.12.15, a GitHub source archive, and 27 resolved packages. No existing project virtual environment was reused.
+- Launched the installed game's CLI help successfully. Re-ran setup without downloading/reinstalling dependencies, and checked the generated launcher with a path containing spaces.
+- Ran all **18 game tests** under the newly installed Python environment: passed. These use dummy video/audio and simulated inputs; they do not validate a friend's webcam or permissions.
+- The dependency preparation/download stage took approximately 12 minutes on the tested connection. First-install time depends on network speed; subsequent installed launches need no dependency download.
+- Intel Macs and a separate friend's computer were not tested. The existing MediaPipe wheel-metadata caveat above remains relevant.

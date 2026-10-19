@@ -87,6 +87,16 @@ The game also opens a **Hand Tracking** window showing the camera feed and detec
 
 ## Quick start
 
+**Mac friends trying the game:** paste this in Terminal. It downloads the game, prepares Python and dependencies, and launches it:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/092135/bird-in-the-city/main/scripts/install-macos.sh)"
+```
+
+First setup requires internet access and a substantial dependency download. Next time, double-click `Bird in the City.command` inside `~/Applications`. See the [Mac playtest guide](docs/MAC_PLAYTEST.md).
+
+### Manual developer setup
+
 Use **Python 3.11 or 3.12** and a desktop session with working graphics and audio. A webcam is needed only for gesture control. Installation and automated gameplay checks were verified on macOS ARM64 with Python 3.12; other platforms still need testing.
 
 ```bash
