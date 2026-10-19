@@ -12,7 +12,7 @@ The first setup needs an internet connection and downloads several hundred MB. T
 
 The game revision is pinned in the installer so friends receive the same build. Running the command again retries incomplete setup without replacing an existing game install or its high score. The installer itself is fetched from this repository's main branch.
 
-The current build includes 10-round magazines: when empty, open all five left-hand fingers for half a second to reload (keyboard: hold E). Run the installation command again to download this build and update the launcher. Older builds and their score files remain in their release folders; scores are not automatically copied between builds.
+The current build includes 10-round magazines: whenever below 10 rounds, open all five left-hand fingers for half a second to reload (keyboard: hold E). Run the installation command again to download this build and update the launcher. Older builds and their score files remain in their release folders; scores are not automatically copied between builds.
 
 ## After the window opens
 

@@ -154,11 +154,20 @@ class GameTests(unittest.TestCase):
             g.handle_input()
         self.assertEqual((g.ammo, len(g.bullets)), (9, 1))
 
-    def test_reload_only_when_empty_and_guide_cancels_hold(self):
+    def test_reload_partial_magazines_but_not_full_and_guide_cancels_hold(self):
         g = self.game
-        g.ammo = 3
+        for rounds in (0, 3, 9):
+            with self.subTest(rounds=rounds):
+                g.ammo = rounds
+                g.reload_started_at = None
+                with patch.object(pygame.time, 'get_ticks', side_effect=[100, 600]):
+                    g.update_reload(InputState(reload=True))
+                    self.assertEqual(g.ammo, rounds)
+                    g.update_reload(InputState(reload=True))
+                self.assertEqual(g.ammo, 10)
         g.update_reload(InputState(reload=True))
-        self.assertEqual(g.ammo, 3)
+        self.assertEqual(g.ammo, 10)
+        self.assertIsNone(g.reload_started_at)
         g.ammo = 0
         g.update_reload(InputState(reload=True))
         g.update_reload(InputState(shoot=True, reload=True))

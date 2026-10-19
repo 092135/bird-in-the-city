@@ -1,5 +1,12 @@
 # Validation record
 
+## Reload anytime and right-side ammunition HUD — 2026-10-19
+
+- Supersedes the empty-magazine-only rule below: any magazine below 10 rounds can now be topped up by holding the left hand open (or E) for 500 ms.
+- Ammo is at the upper right. The reload hint/progress panel appears only below 10 rounds; active power-up labels sit underneath without overlapping it. The bottom camera hint no longer repeats the reload prompt.
+- All **24 tests passed**, including partial reloads at 0, 3, and 9 rounds, full-magazine exclusion, cancellation, replay, and firing limits.
+- Visually inspected full/partial/empty right-side HUD and guide renders with simulated camera input and all power-up labels active. Live-camera accuracy is not newly verified.
+
 ## Magazine and open-palm reload — 2026-10-19
 
 - All **24 tests passed** using the project virtual environment, dummy video/audio, real game assets, and simulated inputs.

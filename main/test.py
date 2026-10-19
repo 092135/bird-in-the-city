@@ -621,7 +621,7 @@ class Game:
         self.frame_count += 1
 
     def update_reload(self, intent):
-        if self.ammo > 0 or not intent.reload or intent.shoot:
+        if self.ammo >= GameConfig.MAGAZINE_SIZE or not intent.reload or intent.shoot:
             self.reload_started_at = None
             self.reload_progress = 0.0
             return
@@ -1179,8 +1179,7 @@ class Game:
             'HP': f"{max(0, self.bird_health)}%",  # 简化 Health 为 HP
             'Score': f"{self.score}",
             'Best': f"{self.highscore}", 
-            'Level': f"{self.level}",
-            'Ammo': f"{self.ammo}/{GameConfig.MAGAZINE_SIZE}"
+            'Level': f"{self.level}"
         }
         
         shadow_color = (50, 50, 50)
@@ -1197,18 +1196,25 @@ class Game:
             text_surface = font.render(text, True, text_color)
             self.screen.blit(text_surface, (10, 10 + i * 30))
         
-        if self.ammo == 0:
+        # Keep ammunition together on the right, above active power-ups.
+        margin = 20
+        ammo_text = f'Ammo: {self.ammo}/{GameConfig.MAGAZINE_SIZE}'
+        ammo_x = self.width - margin - font.size(ammo_text)[0]
+        self.screen.blit(font.render(ammo_text, True, shadow_color), (ammo_x + 2, 12))
+        self.screen.blit(font.render(ammo_text, True, text_color), (ammo_x, 10))
+        y = 45
+        if self.ammo < GameConfig.MAGAZINE_SIZE:
             hint = 'Open LEFT hand' if self.controls.mode == 'camera' else 'Hold E'
             hint += ' to reload (0.5s)'
-            pygame.draw.rect(self.screen, (35, 27, 24), (10, 163, 285, 54))
+            panel_x = self.width - margin - 285
+            pygame.draw.rect(self.screen, (35, 27, 24), (panel_x, 40, 285, 54))
             label = pygame.font.Font(None, 24).render(hint, True, (255, 204, 120))
-            self.screen.blit(label, (18, 170))
-            pygame.draw.rect(self.screen, (85, 75, 65), (18, 200, 265, 8))
-            pygame.draw.rect(self.screen, (255, 204, 120), (18, 200, int(265 * self.reload_progress), 8))
+            self.screen.blit(label, (panel_x + 8, 47))
+            pygame.draw.rect(self.screen, (85, 75, 65), (panel_x + 8, 77, 265, 8))
+            pygame.draw.rect(self.screen, (255, 204, 120), (panel_x + 8, 77, int(265 * self.reload_progress), 8))
+            y = 110
 
         # 右上角效果显示
-        margin = 20   # 向左移动起始位置，留出更多空间
-        y = 10
         for effect_name, effect in self.effects.items():
             if effect['duration'] > 0 or effect['uses'] > 0:
                 formatted_name = format_effect_name(effect_name)

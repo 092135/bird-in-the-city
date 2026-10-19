@@ -75,11 +75,11 @@ For gesture control, keep both hands visible to the webcam with enough light and
 | Start / read the story / quit | Click **PLAY**, **INTRO**, or **QUIT** on the menu |
 | Move the bird | Move your **right index fingertip**; flight is constrained to the left third of the game window |
 | Shoot | Pinch your **left thumb and index finger** together; holding the pinch repeats shots until the 10-round magazine is empty |
-| Reload (empty magazine) | Open all five fingers of your **left hand** and hold for **0.5 seconds**; lowering/folding the hand interrupts reloading |
+| Reload (fewer than 10 rounds) | Open all five fingers of your **left hand** and hold for **0.5 seconds**; lowering/folding the hand interrupts reloading |
 | Restart after game over | Press **R** with the game window focused |
 | Quit after game over | Press **Q** with the game window focused |
 | Keyboard movement / shooting | **WASD** or **arrow keys** / hold **Space** |
-| Keyboard reload (empty magazine) | Hold **E** for **0.5 seconds** |
+| Keyboard reload (fewer than 10 rounds) | Hold **E** for **0.5 seconds** |
 | Show / close the controls guide (pauses gameplay) | **H** or click **GUIDE** |
 | Switch to keyboard | **K** |
 | Retry / switch to camera | **C** |

@@ -137,7 +137,7 @@ class InputController:
     @property
     def hint(self):
         if self.camera is not None:
-            return 'CAMERA | Empty? Open LEFT hand to reload | K: keyboard'
+            return 'CAMERA | K: keyboard | C: retry | ESC: quit'
         prefix = 'CAMERA UNAVAILABLE | ' if self.notice else ''
         return prefix + 'WASD/Arrows: move | SPACE: fire | E: reload | C: camera'
 
