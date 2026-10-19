@@ -7,7 +7,7 @@ if [[ "$(uname -s)" != Darwin ]]; then
     exit 1
 fi
 
-GAME_REVISION=50b9edfb7c4b3e9e2e61b12f6df2287f9ff907db
+GAME_REVISION=765e5630e868e00710ddc376701650939c2b9e64
 GAME_HOME="${BIRD_INSTALL_DIR:-$HOME/Library/Application Support/BirdInTheCity}"
 GAME_SOURCE="$GAME_HOME/releases/$GAME_REVISION"
 GAME_UV="$GAME_HOME/tools/uv"
@@ -61,7 +61,7 @@ fi
 export MPLCONFIGDIR="$GAME_HOME/matplotlib"
 cd "$GAME_SOURCE"
 echo 'Click PLAY. Right index finger: move; left pinch: shoot.'
-echo '10 rounds per magazine. Open all LEFT fingers for 0.5s; keyboard: hold E.'
+echo 'Default: unlimited ammo. 1: unlimited | 2: 10 rounds (open LEFT hand / hold E to reload).'
 echo 'K: keyboard | C: camera | H: guide | R: replay after game over'
 "$GAME_HOME/venv/bin/python" "$GAME_SOURCE/run.py" "$@"
 LAUNCHER
