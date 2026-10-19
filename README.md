@@ -2,7 +2,7 @@
 
 **A gesture-controlled pixel-art game about a bird's journey through the city.**
 
-Guide a yellow-breasted bunting through an urban landscape using your webcam: move with your right hand and pinch with your left to shoot. Glass, smog, and high-rise buildings become obstacles, while the bird and the city change appearance as health falls.
+Guide a yellow-breasted bunting through an urban landscape using your webcam: move with your right hand and pinch with your left to shoot. Choose **Unlimited** ammo for continuous fire, or **Limited** mode for a 10-round magazine that you refill by opening your left hand. Glass, smog, and high-rise buildings become obstacles, while the bird and the city change appearance as health falls. Keyboard controls are also available.
 
 <p align="center">
   <img src="docs/images/title.png" alt="Bird in the City title artwork: a pixel-art bird above green rice fields" width="720">
@@ -22,6 +22,23 @@ What does a city feel like from a bird's perspective? **Bird in the City** turns
 The interaction connects physical movement to survival: one hand guides the bird, the other fires at incoming threats. Damage is visible in both the character and its surroundings, making health part of the visual narrative rather than just a number in the corner.
 
 This repository contains a **local Python game prototype**, its artwork, fonts, and sound effects. It uses MediaPipe's pretrained hand tracking; it does not train a custom recognition model. The environmental theme is a design intention, not a claim of measured educational impact.
+
+## Two ammo modes
+
+Both modes share the same urban hazards, health system, power-ups, and level progression. Limited mode adds a reload action alongside movement and shooting.
+
+| | Unlimited | Limited |
+| :--- | :--- | :--- |
+| Ammo | Unlimited; no reloading | 10-round magazine |
+| Shooting | Hold a left-hand pinch, or hold Space | Same controls; firing stops when the magazine is empty |
+| Camera reload | Not needed | Open all five fingers of the **left hand** and hold for **0.5 seconds** |
+| Keyboard reload | Not needed | Hold **E** for **0.5 seconds** |
+| Reload timing | — | Refill whenever below 10 rounds; a partial magazine does not need to be emptied first |
+| On-screen ammo display | Hidden | Remaining rounds and reload progress |
+
+In Limited mode, closing the reload hand, losing its detection, or shooting interrupts the reload. A powered volley still consumes **one round**, even when it launches several projectiles.
+
+Click **PLAY**, choose **KEYBOARD** or **CAMERA**, then select **UNLIMITED** or **LIMITED**. A short guide explains the selected controls before the round begins. Both choices stay locked during play; use **HOME** to choose a different setup. **R** after game over replays the same mode.
 
 ## A city that changes with you
 
@@ -60,7 +77,8 @@ The background is selected by the bird's current health. Collecting a recovery i
 *Presentation note: gameplay images were supplied with the project's portfolio assets. They were rendered from game code with simulated gesture input and staged HUD values; they are illustrative screenshots, not live playtest captures. See [image provenance](docs/images/README.md).*
 
 - **Keyboard fallback:** WASD / arrow keys to move, Space to shoot; automatic fallback when the camera fails.
-- **Two-hand control:** right index fingertip for movement; left thumb–index pinch for shooting.
+- **Two ammo modes:** Unlimited continuous fire, or Limited with a 10-round magazine and a half-second reload.
+- **Two-hand control:** right index fingertip for movement; left thumb–index pinch for shooting; an open left hand reloads in Limited mode.
 - **Five power-ups:** health recovery, shield, rapid fire, triple shot, and spread shot.
 - **Progression:** scores, combo bonuses, rising levels, and increasingly frequent enemies.
 - **Audiovisual feedback:** animated bird states, impact and recovery effects, background music, and sound effects.
@@ -76,7 +94,7 @@ For gesture control, keep both hands visible to the webcam with enough light and
 | Move the bird | Move your **right index fingertip**; flight is constrained to the left third of the game window |
 | Ammo mode | **Unlimited** by default: hold the pinch to keep firing without reloading. Choose **10-round magazine** for limited ammo; click **PLAY**, then choose a mode to start. The selected ammo mode is locked for the round; return HOME to change it |
 | Shoot | Pinch your **left thumb and index finger** together; holding the pinch repeats shots after a cooldown |
-| Reload (limited mode, fewer than 10 rounds) | Open all five fingers of your **left hand** and hold for **0.5 seconds**; lowering/folding the hand interrupts reloading |
+| Reload (limited mode, fewer than 10 rounds) | Open all five fingers of your **left hand** and hold for **0.5 seconds**; closing the hand interrupts reloading |
 | Restart after game over | Press **R** with the game window focused |
 | Quit after game over | Press **Q** with the game window focused |
 | Keyboard movement / shooting | **WASD** or **arrow keys** / hold **Space** |
